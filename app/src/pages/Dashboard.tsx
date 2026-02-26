@@ -1,0 +1,360 @@
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
+import {
+  Users,
+  GraduationCap,
+  CalendarCheck,
+  ClipboardList,
+  TrendingUp,
+  ArrowRight,
+  Loader2,
+  School,
+  Star,
+  Bell,
+  UserCircle,
+  CalendarDays,
+  MessageSquare,
+  ChevronRight,
+  UserPlus
+} from 'lucide-react';
+import { batchService, studentService, schoolService } from '@/services/api';
+import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
+
+interface DashboardStats {
+  totalBatches: number;
+  totalStudents: number;
+  averageAttendance: number;
+  averageFeedbackScore: number;
+  assignmentCompletionRate: number;
+  totalSchools?: number;
+  activeStudents?: number;
+  placedStudents?: number;
+  interviewRequired?: number;
+}
+
+interface RecentActivity {
+  id: string;
+  type: 'student' | 'attendance' | 'assignment' | 'feedback' | 'notification';
+  title: string;
+  description: string;
+  timestamp: string;
+}
+
+export default function Dashboard() {
+  const { user, hasRole } = useAuth();
+      const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setIsLoading(true);
+      const batchResponse = await batchService.getAnalytics();
+      const studentResponse = await studentService.getAnalytics();
+
+      let schoolData = { totalSchools: 0 };
+      if (hasRole(['leadership', 'head_academics', 'ceo_haca', 'sho_team_lead', 'ssho', 'academic', 'pl'])) {
+        const schoolResponse = await schoolService.getAnalytics();
+        schoolData = schoolResponse.data.analytics;
+      }
+
+      setStats({
+        ...batchResponse.data.analytics,
+        ...studentResponse.data.analytics,
+        totalSchools: schoolData.totalSchools
+      });
+
+      setRecentActivities([]);
+    } catch (error) {
+      toast.error('Failed to load dashboard data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getRoleLabel = (role: string) => {
+    const labels: Record<string, string> = {
+      sho: 'Student Happiness Officer',
+      ssho: 'Senior SHO / PL',
+      academic: 'Academic',
+      pl: 'Program Lead',
+      mentor: 'Mentor',
+      leadership: 'Leadership',
+      head_academics: 'Head of Academics',
+      ceo_haca: 'CEO of HACA',
+      sho_team_lead: 'SHO Team Lead'
+    };
+    return labels[role] || role;
+  };
+
+  const getActivityIcon = (type: string) => {
+    const iconMap: Record<string, any> = {
+      student: GraduationCap,
+      attendance: CalendarCheck,
+      assignment: ClipboardList,
+      feedback: Star,
+      notification: Bell,
+    };
+    const Icon = iconMap[type] || Bell;
+    return <Icon className="h-4 w-4" />;
+  };
+
+  const getActivityColor = (type: string) => {
+    const colors: Record<string, string> = {
+      student: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+      attendance: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+      assignment: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+      feedback: 'bg-violet-500/10 text-violet-600 dark:text-violet-400',
+      notification: 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
+    };
+    return colors[type] || 'bg-gray-500/10 text-gray-600';
+  };
+
+  const quickActions = [
+    { label: 'Mark Attendance', icon: CalendarCheck, path: '/attendance', roles: ['sho'] },
+    { label: 'Assignments', icon: ClipboardList, path: '/assignments', roles: [] },
+    { label: 'Send Notice', icon: Bell, path: '/notifications', roles: ['sho', 'ssho', 'academic', 'pl', 'leadership'] },
+    { label: 'Feedback', icon: MessageSquare, path: '/feedback', roles: [] },
+    { label: 'Students', icon: GraduationCap, path: '/students', roles: [] },
+    { label: 'Groups', icon: UserCircle, path: '/groups', roles: [] },
+    { label: 'Class Planner', icon: CalendarDays, path: '/class-planner', roles: [] },
+    { label: 'Analytics', icon: TrendingUp, path: '/analytics', roles: [] },
+    { label: 'Add User', icon: UserPlus, path: '/users', roles: ['leadership', 'ceo_haca', 'head_academics'] },
+  ].filter(action => action.roles.length === 0 || hasRole(action.roles));
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Loading dashboard…</p>
+        </div>
+      </div>
+    );
+  }
+
+  const statCards = [
+    {
+      label: 'Batches',
+      value: stats?.totalBatches || 0,
+      subtitle: hasRole(['sho', 'mentor']) ? 'Assigned to you' : 'Total batches',
+      icon: Users,
+      color: 'text-blue-600 dark:text-blue-400',
+      bg: 'bg-blue-500/10',
+    },
+    {
+      label: 'Students',
+      value: stats?.totalStudents || 0,
+      subtitle: `${stats?.activeStudents || 0} active · ${stats?.placedStudents || 0} placed`,
+      icon: GraduationCap,
+      color: 'text-emerald-600 dark:text-emerald-400',
+      bg: 'bg-emerald-500/10',
+    },
+    ...(hasRole(['leadership', 'head_academics', 'ceo_haca', 'sho_team_lead', 'ssho', 'academic', 'pl'])
+      ? [{
+        label: 'Schools',
+        value: stats?.totalSchools || 0,
+        subtitle: 'Partner institutions',
+        icon: School,
+        color: 'text-violet-600 dark:text-violet-400',
+        bg: 'bg-violet-500/10',
+      }]
+      : [{
+        label: 'Attendance',
+        value: `${stats?.averageAttendance?.toFixed(0) || 0}%`,
+        subtitle: 'Average across batches',
+        icon: CalendarCheck,
+        color: 'text-amber-600 dark:text-amber-400',
+        bg: 'bg-amber-500/10',
+        hasProgress: true,
+        progressValue: stats?.averageAttendance || 0,
+      }]
+    ),
+    {
+      label: 'Feedback',
+      value: `${stats?.averageFeedbackScore?.toFixed(1) || 0}/5`,
+      subtitle: 'Average rating',
+      icon: Star,
+      color: 'text-amber-600 dark:text-amber-400',
+      bg: 'bg-amber-500/10',
+      hasProgress: true,
+      progressValue: (stats?.averageFeedbackScore || 0) * 20,
+    },
+  ];
+
+  return (
+    
+
+      
+        <div className="p-4 lg:p-8 max-w-[1200px] mx-auto">
+          {/* Header */}
+          <div className="mb-8 animate-fade-in">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Welcome back, <span className="text-gradient">{user?.name?.split(' ')[0]}</span>
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {getRoleLabel(user?.role || '')} · Here's your overview for today
+            </p>
+          </div>
+
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+            {statCards.map((stat, index) => {
+              const Icon = stat.icon;
+              return (
+                <Card
+                  key={stat.label}
+                  className="animate-slide-up border-border/60 hover:border-border transition-colors"
+                  style={{ animationDelay: `${index * 0.05}s` }}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{stat.label}</span>
+                      <div className={`w-8 h-8 rounded-lg ${stat.bg} flex items-center justify-center`}>
+                        <Icon className={`h-4 w-4 ${stat.color}`} />
+                      </div>
+                    </div>
+                    <div className="stat-number">{stat.value}</div>
+                    <p className="text-[11px] text-muted-foreground mt-1">{stat.subtitle}</p>
+                    {(stat as any).hasProgress && (
+                      <Progress value={(stat as any).progressValue || 0} className="mt-2 h-1" />
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+            {/* Quick Actions */}
+            <Card className="lg:col-span-3 animate-slide-up border-border/60" style={{ animationDelay: '0.15s' }}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-semibold">Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {quickActions.slice(0, 8).map((action) => {
+                    const Icon = action.icon;
+                    return (
+                      <Link key={action.path} to={action.path}>
+                        <div className="group rounded-lg border border-border/50 p-3 hover:bg-accent/50 transition-all duration-150 cursor-pointer">
+                          <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center mb-2 group-hover:bg-primary/10 transition-colors">
+                            <Icon className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                          </div>
+                          <span className="text-xs font-medium">{action.label}</span>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Recent Activity */}
+            <Card className="lg:col-span-2 animate-slide-up border-border/60" style={{ animationDelay: '0.2s' }}>
+              <CardHeader className="flex flex-row items-center justify-between pb-3">
+                <CardTitle className="text-sm font-semibold">Recent Activity</CardTitle>
+                <Link to="/analytics">
+                  <Button variant="ghost" size="sm" className="text-xs h-7 text-muted-foreground hover:text-foreground">
+                    View All <ChevronRight className="ml-0.5 h-3 w-3" />
+                  </Button>
+                </Link>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {recentActivities.map((activity) => (
+                    <div key={activity.id} className="flex items-start gap-3">
+                      <div className={`w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 ${getActivityColor(activity.type)}`}>
+                        {getActivityIcon(activity.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium leading-tight">{activity.title}</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">{activity.description}</p>
+                        <p className="text-[10px] text-muted-foreground/60 mt-0.5">{activity.timestamp}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Bottom Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+            {/* Student Status */}
+            <Card className="animate-slide-up border-border/60" style={{ animationDelay: '0.25s' }}>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold">Student Distribution</CardTitle>
+                  <Link to="/students">
+                    <Button variant="ghost" size="sm" className="text-xs h-7 text-muted-foreground">
+                      View <ArrowRight className="ml-1 h-3 w-3" />
+                    </Button>
+                  </Link>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {[
+                    { label: 'Active', value: stats?.activeStudents || 0, total: stats?.totalStudents || 1, color: 'bg-emerald-500' },
+                    { label: 'Placed', value: stats?.placedStudents || 0, total: stats?.totalStudents || 1, color: 'bg-blue-500' },
+                    { label: 'Interview Req.', value: stats?.interviewRequired || 0, total: stats?.totalStudents || 1, color: 'bg-amber-500' },
+                  ].map((item) => (
+                    <div key={item.label} className="flex items-center gap-3">
+                      <span className="text-xs font-medium text-muted-foreground w-24">{item.label}</span>
+                      <div className="flex-1 bg-muted rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${item.color} transition-all duration-700`}
+                          style={{ width: `${(item.value / item.total) * 100}%` }}
+                        />
+                      </div>
+                      <Badge variant="secondary" className="min-w-[28px] justify-center text-[11px] font-medium h-5">
+                        {item.value}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Performance */}
+            <Card className="animate-slide-up border-border/60" style={{ animationDelay: '0.3s' }}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-semibold">Performance Overview</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {[
+                    { label: 'Assignment Completion', value: stats?.assignmentCompletionRate || 0, color: 'text-blue-600 dark:text-blue-400' },
+                    { label: 'Average Attendance', value: stats?.averageAttendance || 0, color: 'text-emerald-600 dark:text-emerald-400' },
+                    { label: 'Feedback Score', value: (stats?.averageFeedbackScore || 0) * 20, color: 'text-amber-600 dark:text-amber-400' },
+                    { label: 'Overall Performance', value: 0, color: 'text-violet-600 dark:text-violet-400' },
+                  ].map((metric) => (
+                    <div key={metric.label}>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-medium">{metric.label}</span>
+                        <span className={`text-xs font-semibold tabular-nums ${metric.color}`}>
+                          {metric.value.toFixed(0)}%
+                        </span>
+                      </div>
+                      <Progress value={metric.value} className="h-1.5" />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      
+  );
+}
