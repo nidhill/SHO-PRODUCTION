@@ -35,18 +35,33 @@ router.get('/student/:studentId', verifyToken, async (req, res) => {
 // POST /api/attendance
 router.post('/', verifyToken, async (req, res) => {
     try {
-        const data = {
-            ...req.body,
-            markedBy: req.userId
-        };
-        const present = data.students?.filter(s => s.status === 'present').length || 0;
-        const total = data.students?.length || 1;
-        data.totalPresent = present;
-        data.totalAbsent = total - present;
-        data.attendancePercentage = Math.round((present / total) * 100);
+        const { batch, date, students } = req.body;
 
-        const attendance = await Attendance.create(data);
-        res.status(201).json({ success: true, message: 'Attendance marked successfully', attendance });
+        // Strip out the time from the date to ensure unique daily records
+        const searchDate = new Date(date);
+        searchDate.setHours(0, 0, 0, 0);
+
+        const present = students?.filter(s => s.status === 'present').length || 0;
+        const total = students?.length || 1;
+
+        const data = {
+            batch,
+            date: searchDate,
+            students,
+            markedBy: req.userId,
+            totalPresent: present,
+            totalAbsent: total - present,
+            attendancePercentage: Math.round((present / total) * 100)
+        };
+
+        // Use findOneAndUpdate with upsert: true to either update today's existing record or create a new one
+        const attendance = await Attendance.findOneAndUpdate(
+            { batch, date: searchDate },
+            { $set: data },
+            { new: true, upsert: true, runValidators: true }
+        );
+
+        res.status(200).json({ success: true, message: 'Attendance saved successfully', attendance });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

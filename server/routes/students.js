@@ -6,7 +6,19 @@ const { verifyToken } = require('../middleware/auth');
 // GET /api/students
 router.get('/', verifyToken, async (req, res) => {
     try {
-        const students = await Student.find({ isActive: true })
+        const user = req.user;
+        let filter = { isActive: true };
+
+        if (user.role === 'sho' || user.role === 'mentor') {
+            filter.batch = { $in: user.assignedBatches || [] };
+        } else if (user.role === 'ssho') {
+            const dbSchoolName = user.school ? user.school.replace('_', ' ') : '';
+            const dbSchool = await require('../models/School').findOne({ name: new RegExp('^' + dbSchoolName.split(' ')[0], 'i') });
+            filter.school = dbSchool ? dbSchool._id : null;
+        }
+        // leadership: no filter, sees all
+
+        const students = await Student.find(filter)
             .populate('batch', 'name code')
             .populate('school', 'name address place');
         res.json({ success: true, students });
@@ -18,11 +30,23 @@ router.get('/', verifyToken, async (req, res) => {
 // GET /api/students/analytics
 router.get('/analytics', verifyToken, async (req, res) => {
     try {
-        const totalStudents = await Student.countDocuments({ isActive: true });
-        const activeStudents = await Student.countDocuments({ status: 'active', isActive: true });
-        const placedStudents = await Student.countDocuments({ status: 'placed', isActive: true });
-        const interviewRequired = await Student.countDocuments({ status: 'interview_required', isActive: true });
-        const revokedStudents = await Student.countDocuments({ status: 'revoked', isActive: true });
+        const user = req.user;
+        let filter = { isActive: true };
+
+        if (user.role === 'sho' || user.role === 'mentor') {
+            filter.batch = { $in: user.assignedBatches || [] };
+        } else if (user.role === 'ssho') {
+            const dbSchoolName = user.school ? user.school.replace('_', ' ') : '';
+            const dbSchool = await require('../models/School').findOne({ name: new RegExp('^' + dbSchoolName.split(' ')[0], 'i') });
+            filter.school = dbSchool ? dbSchool._id : null;
+        }
+        // leadership, ceo_haca, head_academics: no filter, sees all
+
+        const totalStudents = await Student.countDocuments(filter);
+        const activeStudents = await Student.countDocuments({ ...filter, status: 'active' });
+        const placedStudents = await Student.countDocuments({ ...filter, status: 'placed' });
+        const interviewRequired = await Student.countDocuments({ ...filter, status: 'interview_required' });
+        const revokedStudents = await Student.countDocuments({ ...filter, status: 'revoked' });
         res.json({
             success: true,
             analytics: {

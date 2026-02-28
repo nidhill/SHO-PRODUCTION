@@ -9,7 +9,7 @@ import {
   ClipboardList,
   MessageSquare,
   Bell,
-  UserCircle,
+
   School,
   BarChart3,
   LogOut,
@@ -62,7 +62,6 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, isMobileOpen, set
 
   const otherNavItems = [
     { path: '/notifications', label: 'Notifications', icon: Bell, roles: ['sho', 'ssho', 'academic', 'pl', 'leadership', 'head_academics', 'ceo_haca', 'sho_team_lead'] },
-    { path: '/groups', label: 'Groups', icon: UserCircle, roles: [] },
     { path: '/analytics', label: 'Analytics', icon: BarChart3, roles: [] },
     { path: '/audit-logs', label: 'Audit Logs', icon: ShieldAlert, roles: ['leadership', 'ceo_haca'] },
     { path: '/settings', label: 'Settings', icon: SettingsIcon, roles: [] },
@@ -232,6 +231,11 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, isMobileOpen, set
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-slate-200 truncate">{user?.name}</p>
                   <p className="text-[10px] text-slate-500">{getRoleLabel(user?.role || '')}</p>
+                  <p className="text-[9px] text-blue-400 truncate mt-0.5">
+                    {user?.assignedSchools && user.assignedSchools.length > 0
+                      ? (user.assignedSchools[0] as any).name || 'Assigned School'
+                      : 'No School Assigned'}
+                  </p>
                 </div>
               </div>
             </div>

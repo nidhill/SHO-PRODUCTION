@@ -7,7 +7,19 @@ const { verifyToken } = require('../middleware/auth');
 // GET /api/batches
 router.get('/', verifyToken, async (req, res) => {
     try {
-        const batches = await Batch.find({ isActive: true })
+        const user = req.user;
+        let filter = { isActive: true };
+
+        if (user.role === 'sho' || user.role === 'mentor') {
+            filter._id = { $in: user.assignedBatches || [] };
+        } else if (user.role === 'ssho') {
+            const dbSchoolName = user.school ? user.school.replace('_', ' ') : '';
+            const dbSchool = await require('../models/School').findOne({ name: new RegExp('^' + dbSchoolName.split(' ')[0], 'i') });
+            filter.school = dbSchool ? dbSchool._id : null;
+        }
+        // leadership/admin: no filter, sees all
+
+        const batches = await Batch.find(filter)
             .populate('school', 'name address place')
             .populate('assignedSHO', 'name email role')
             .populate('assignedMentors', 'name email role');
@@ -20,8 +32,30 @@ router.get('/', verifyToken, async (req, res) => {
 // GET /api/batches/analytics
 router.get('/analytics', verifyToken, async (req, res) => {
     try {
-        const totalBatches = await Batch.countDocuments({ isActive: true });
-        const totalStudents = await Student.countDocuments({ isActive: true });
+        const user = req.user;
+        let filter = { isActive: true };
+
+        if (user.role === 'sho' || user.role === 'mentor') {
+            filter._id = { $in: user.assignedBatches || [] };
+        } else if (user.role === 'ssho') {
+            const dbSchoolName = user.school ? user.school.replace('_', ' ') : '';
+            const dbSchool = await require('../models/School').findOne({ name: new RegExp('^' + dbSchoolName.split(' ')[0], 'i') });
+            filter.school = dbSchool ? dbSchool._id : null;
+        }
+
+        const totalBatches = await Batch.countDocuments(filter);
+
+        let studentFilter = { isActive: true };
+        if (user.role === 'sho' || user.role === 'mentor') {
+            studentFilter.batch = { $in: user.assignedBatches || [] };
+        } else if (user.role === 'ssho') {
+            const dbSchoolName = user.school ? user.school.replace('_', ' ') : '';
+            const dbSchool = await require('../models/School').findOne({ name: new RegExp('^' + dbSchoolName.split(' ')[0], 'i') });
+            studentFilter.school = dbSchool ? dbSchool._id : null;
+        }
+
+        const totalStudents = await Student.countDocuments(studentFilter);
+
         res.json({
             success: true,
             analytics: {

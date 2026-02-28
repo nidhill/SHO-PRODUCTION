@@ -11,8 +11,8 @@ app.use(cors({
     origin: ['http://localhost:3000', 'http://localhost:5173'],
     credentials: true
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ─── Routes ────────────────────────────────────────────────
 app.use('/api/auth', require('./routes/auth'));
@@ -24,9 +24,9 @@ app.use('/api/attendance', require('./routes/attendance'));
 app.use('/api/assignments', require('./routes/assignments'));
 app.use('/api/feedback', require('./routes/feedback'));
 app.use('/api/notifications', require('./routes/notifications'));
-app.use('/api/groups', require('./routes/groups'));
 app.use('/api/class-planner', require('./routes/classPlanner'));
 app.use('/api/audit-logs', require('./routes/auditLogs'));
+app.use('/api/sync', require('./routes/sync'));
 
 // Health check (also shows which MongoDB is connected)
 app.get('/api/health', (_req, res) => {

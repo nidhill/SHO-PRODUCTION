@@ -11,7 +11,7 @@ import Attendance from './pages/Attendance';
 import Assignments from './pages/Assignments';
 import Feedback from './pages/Feedback';
 import Notifications from './pages/Notifications';
-import Groups from './pages/Groups';
+
 import Schools from './pages/Schools';
 import Analytics from './pages/Analytics';
 import ClassPlanner from './pages/ClassPlanner';
@@ -72,11 +72,7 @@ function App() {
                   <Notifications />
                 </ProtectedRoute>
               } />
-              <Route path="/groups" element={
-                <ProtectedRoute>
-                  <Groups />
-                </ProtectedRoute>
-              } />
+
               <Route path="/schools" element={
                 <ProtectedRoute allowedRoles={['leadership', 'head_academics', 'ceo_haca', 'sho_team_lead', 'ssho', 'academic', 'pl']}>
                   <Schools />

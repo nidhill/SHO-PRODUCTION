@@ -8,7 +8,19 @@ const { verifyToken } = require('../middleware/auth');
 // GET /api/schools
 router.get('/', verifyToken, async (req, res) => {
     try {
-        const schools = await School.find({ isActive: true });
+        const user = req.user;
+        let filter = { isActive: true };
+
+        if (user.role === 'sho' || user.role === 'mentor') {
+            // SHO/Mentor: only their assigned schools
+            filter._id = { $in: user.assignedSchools || [] };
+        } else if (user.role === 'ssho') {
+            // SSHO: only their assigned schools
+            filter._id = { $in: user.assignedSchools || [] };
+        }
+        // leadership/admin: no filter, sees all
+
+        const schools = await School.find(filter);
         res.json({ success: true, schools });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -18,15 +30,26 @@ router.get('/', verifyToken, async (req, res) => {
 // GET /api/schools/analytics
 router.get('/analytics', verifyToken, async (req, res) => {
     try {
-        const schools = await School.find({ isActive: true });
-        const totalStudents = await Student.countDocuments({ isActive: true });
+        const user = req.user;
+        let filter = { isActive: true };
+
+        if (user.role === 'sho' || user.role === 'mentor' || user.role === 'ssho') {
+            filter._id = { $in: user.assignedSchools || [] };
+        }
+
+        const schools = await School.find(filter);
+        let totalStudents = 0;
         const schoolsList = await Promise.all(
-            schools.map(async (s) => ({
-                id: s._id,
-                name: s.name,
-                totalBatches: await Batch.countDocuments({ school: s._id, isActive: true }),
-                totalStudents: await Student.countDocuments({ school: s._id, isActive: true })
-            }))
+            schools.map(async (s) => {
+                const sTotalStudents = await Student.countDocuments({ school: s._id, isActive: true });
+                totalStudents += sTotalStudents;
+                return {
+                    id: s._id,
+                    name: s.name,
+                    totalBatches: await Batch.countDocuments({ school: s._id, isActive: true }),
+                    totalStudents: sTotalStudents
+                };
+            })
         );
         res.json({
             success: true,

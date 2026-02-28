@@ -58,6 +58,14 @@ export const authService = {
   }
 };
 
+// ─── Sync Service ──────────────────────────────────────────
+export const syncService = {
+  syncData: async () => {
+    const res = await api.post('/sync');
+    return { data: res.data };
+  }
+};
+
 // ─── User Service ──────────────────────────────────────────
 export const userService = {
   getAll: async () => {

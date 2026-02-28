@@ -52,6 +52,7 @@ export default function Users() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [userToDelete, setUserToDelete] = useState<string | null>(null);
     const [batches, setBatches] = useState<any[]>([]);
+    const [batchSearch, setBatchSearch] = useState('');
 
     // New user form state
     const [newUser, setNewUser] = useState({
@@ -156,135 +157,178 @@ export default function Users() {
                             Add User
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
+                    <DialogContent className="sm:max-w-[800px] bg-background/95 backdrop-blur-xl border-border/50">
                         <DialogHeader>
-                            <DialogTitle>Add New User</DialogTitle>
+                            <DialogTitle className="text-xl">Add New User</DialogTitle>
                             <DialogDescription>
                                 Create a new user account. Default password is 'password'.
                             </DialogDescription>
                         </DialogHeader>
-                        <form onSubmit={handleAddUser} className="space-y-4 py-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="name">Full Name</Label>
-                                <div className="relative">
-                                    <UserIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                                    <Input
-                                        id="name"
-                                        placeholder="John Doe"
-                                        value={newUser.name}
-                                        onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                                        className="pl-9"
-                                        required
-                                    />
+                        <form onSubmit={handleAddUser} className="py-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Left Column: Basic Info */}
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="name">Full Name</Label>
+                                        <div className="relative">
+                                            <UserIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                                            <Input
+                                                id="name"
+                                                placeholder="John Doe"
+                                                value={newUser.name}
+                                                onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                                                className="pl-9"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="email">Email</Label>
+                                        <div className="relative">
+                                            <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                                            <Input
+                                                id="email"
+                                                type="email"
+                                                placeholder="john@example.com"
+                                                value={newUser.email}
+                                                onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                                                className="pl-9"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="phone">Phone</Label>
+                                        <div className="relative">
+                                            <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                                            <Input
+                                                id="phone"
+                                                placeholder="9876543210"
+                                                value={newUser.phone}
+                                                onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
+                                                className="pl-9"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="role">Role</Label>
+                                        <Select
+                                            value={newUser.role}
+                                            onValueChange={(value) => setNewUser({ ...newUser, role: value })}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select role" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="sho">SHO (Student Happiness Officer)</SelectItem>
+                                                <SelectItem value="ssho">SSHO (Senior SHO)</SelectItem>
+                                                <SelectItem value="mentor">Mentor</SelectItem>
+                                                <SelectItem value="leadership">Leadership (Admin)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="school">School</Label>
+                                        <Select
+                                            value={newUser.school}
+                                            onValueChange={(value) => setNewUser({ ...newUser, school: value })}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select school" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="tech_school">Tech School</SelectItem>
+                                                <SelectItem value="marketing_school">Marketing School</SelectItem>
+                                                <SelectItem value="design_school">Design School</SelectItem>
+                                                <SelectItem value="finance_school">Finance School</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+
+                                {/* Right Column: Assignments & Batches */}
+                                <div className="space-y-4 flex flex-col h-full">
+                                    <div className="space-y-2 flex-grow flex flex-col">
+                                        <Label>Assign Batches</Label>
+                                        <div className="relative mb-2">
+                                            <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                                            <Input
+                                                placeholder="Search batches..."
+                                                value={batchSearch}
+                                                onChange={(e) => setBatchSearch(e.target.value)}
+                                                className="pl-9 h-9 text-sm"
+                                            />
+                                        </div>
+                                        <div className="flex-grow max-h-[220px] overflow-y-auto border rounded-xl p-2 space-y-1 bg-muted/20 custom-scrollbar">
+                                            {batches.length === 0 ? (
+                                                <p className="text-xs text-muted-foreground p-2 text-center mt-4">No batches available</p>
+                                            ) : batches.filter(b => b.name?.toLowerCase().includes(batchSearch.toLowerCase()) || b.code?.toLowerCase().includes(batchSearch.toLowerCase())).length === 0 ? (
+                                                <p className="text-xs text-muted-foreground p-2 text-center mt-4">No batches match "{batchSearch}"</p>
+                                            ) : (
+                                                batches.filter(b => b.name?.toLowerCase().includes(batchSearch.toLowerCase()) || b.code?.toLowerCase().includes(batchSearch.toLowerCase())).map((batch) => (
+                                                    <label
+                                                        key={batch._id}
+                                                        className={`flex items-start gap-3 p-3 rounded-lg border border-transparent hover:bg-muted cursor-pointer transition-all ${newUser.assignedBatches.includes(batch._id) ? 'bg-primary/5 border-primary/20' : ''
+                                                            }`}
+                                                    >
+                                                        <div className="mt-0.5">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="rounded border-border w-4 h-4 accent-primary"
+                                                                checked={newUser.assignedBatches.includes(batch._id)}
+                                                                onChange={(e) => {
+                                                                    if (e.target.checked) {
+                                                                        setNewUser({ ...newUser, assignedBatches: [...newUser.assignedBatches, batch._id] });
+                                                                    } else {
+                                                                        setNewUser({ ...newUser, assignedBatches: newUser.assignedBatches.filter(id => id !== batch._id) });
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        <div className="flex flex-col flex-1 min-w-0">
+                                                            <span className="text-sm font-medium truncate">{batch.name}</span>
+                                                            <div className="flex items-center gap-2 mt-1">
+                                                                <span className="text-[10px] font-mono bg-muted-foreground/10 text-muted-foreground px-1.5 py-0.5 rounded">
+                                                                    {batch.code}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </label>
+                                                ))
+                                            )}
+                                        </div>
+                                        {newUser.assignedBatches.length > 0 && (
+                                            <div className="mt-2 flex items-center justify-between">
+                                                <p className="text-xs font-medium text-primary">
+                                                    {newUser.assignedBatches.length} batch{newUser.assignedBatches.length !== 1 ? 'es' : ''} selected
+                                                </p>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-6 text-[10px] px-2 text-muted-foreground hover:text-foreground"
+                                                    onClick={() => setNewUser({ ...newUser, assignedBatches: [] })}
+                                                >
+                                                    Clear selection
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="email">Email</Label>
-                                <div className="relative">
-                                    <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                                    <Input
-                                        id="email"
-                                        type="email"
-                                        placeholder="john@example.com"
-                                        value={newUser.email}
-                                        onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                                        className="pl-9"
-                                        required
-                                    />
+                            <div className="bg-muted/40 border border-border/50 p-3 rounded-xl flex items-start gap-3 text-sm text-muted-foreground mt-6">
+                                <div className="p-1.5 rounded-md bg-background shadow-sm border border-border/50">
+                                    <Lock className="h-4 w-4 text-primary" />
                                 </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="phone">Phone</Label>
-                                <div className="relative">
-                                    <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                                    <Input
-                                        id="phone"
-                                        placeholder="9876543210"
-                                        value={newUser.phone}
-                                        onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
-                                        className="pl-9"
-                                    />
+                                <div className="mt-1">
+                                    <p>New users are created with the default password <strong className="text-foreground font-mono bg-muted px-1 rounded">password</strong>.</p>
+                                    <p className="text-xs mt-0.5 opacity-80">They will be required to change it upon first login.</p>
                                 </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="role">Role</Label>
-                                <Select
-                                    value={newUser.role}
-                                    onValueChange={(value) => setNewUser({ ...newUser, role: value })}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select role" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="sho">SHO (Student Happiness Officer)</SelectItem>
-                                        <SelectItem value="ssho">SSHO (Senior SHO)</SelectItem>
-                                        <SelectItem value="mentor">Mentor</SelectItem>
-                                        <SelectItem value="leadership">Leadership (Admin)</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="school">School</Label>
-                                <Select
-                                    value={newUser.school}
-                                    onValueChange={(value) => setNewUser({ ...newUser, school: value })}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select school" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="tech_school">Tech School</SelectItem>
-                                        <SelectItem value="marketing_school">Marketing School</SelectItem>
-                                        <SelectItem value="design_school">Design School</SelectItem>
-                                        <SelectItem value="finance_school">Finance School</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label>Assign Batches</Label>
-                                <div className="max-h-[140px] overflow-y-auto border rounded-lg p-2 space-y-1 bg-muted/20">
-                                    {batches.length === 0 ? (
-                                        <p className="text-xs text-muted-foreground p-2">No batches available</p>
-                                    ) : (
-                                        batches.map((batch) => (
-                                            <label
-                                                key={batch._id}
-                                                className="flex items-center gap-2 p-2 rounded-md hover:bg-muted/50 cursor-pointer transition-colors"
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    className="rounded border-border"
-                                                    checked={newUser.assignedBatches.includes(batch._id)}
-                                                    onChange={(e) => {
-                                                        if (e.target.checked) {
-                                                            setNewUser({ ...newUser, assignedBatches: [...newUser.assignedBatches, batch._id] });
-                                                        } else {
-                                                            setNewUser({ ...newUser, assignedBatches: newUser.assignedBatches.filter(id => id !== batch._id) });
-                                                        }
-                                                    }}
-                                                />
-                                                <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                    <Layers className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                                                    <span className="text-sm truncate">{batch.name}</span>
-                                                    <span className="text-[10px] text-muted-foreground">({batch.code})</span>
-                                                </div>
-                                            </label>
-                                        ))
-                                    )}
-                                </div>
-                                {newUser.assignedBatches.length > 0 && (
-                                    <p className="text-xs text-muted-foreground">{newUser.assignedBatches.length} batch(es) selected</p>
-                                )}
-                            </div>
-
-                            <div className="bg-muted/50 p-3 rounded-lg flex items-start gap-2 text-xs text-muted-foreground">
-                                <Lock className="h-3.5 w-3.5 mt-0.5" />
-                                <p>New users are created with the default password <strong>password</strong>. They should change it upon first login.</p>
                             </div>
 
                             <DialogFooter className="pt-4">

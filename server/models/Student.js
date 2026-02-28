@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const studentSchema = new mongoose.Schema({
+  // Photo
+  photo: {
+    type: String,
+    required: false
+  },
   // Personal Details
   name: {
     type: String,
@@ -15,19 +20,19 @@ const studentSchema = new mongoose.Schema({
   },
   age: {
     type: Number,
-    required: true
+    required: false
   },
   qualification: {
     type: String,
-    required: true
+    required: false
   },
   address: {
     type: String,
-    required: true
+    required: false
   },
   place: {
     type: String,
-    required: true
+    required: false
   },
   mobileNumber: {
     type: String,
@@ -35,32 +40,32 @@ const studentSchema = new mongoose.Schema({
   },
   parentGuardianNumber: {
     type: String,
-    required: true
+    required: false
   },
   careerDreamsGoals: {
     type: String,
-    required: true
+    required: false
   },
-  
+
   // Batch Information
   batch: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Batch',
-    required: true
+    required: false
   },
   school: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'School',
-    required: true
+    required: false
   },
-  
+
   // Status
   status: {
     type: String,
     enum: ['active', 'placed', 'interview_required', 'revoked'],
     default: 'active'
   },
-  
+
   // Co-Curriculum Tracking
   coCurriculum: {
     presentationSessions: [{
@@ -99,7 +104,7 @@ const studentSchema = new mongoose.Schema({
       areasOfImprovement: [String]
     }]
   },
-  
+
   // Attendance Summary
   attendanceSummary: {
     totalDays: { type: Number, default: 0 },
@@ -107,7 +112,7 @@ const studentSchema = new mongoose.Schema({
     absentDays: { type: Number, default: 0 },
     percentage: { type: Number, default: 0 }
   },
-  
+
   // Assignment Summary
   assignmentSummary: {
     totalAssignments: { type: Number, default: 0 },
@@ -115,13 +120,13 @@ const studentSchema = new mongoose.Schema({
     pendingAssignments: { type: Number, default: 0 },
     completionRate: { type: Number, default: 0 }
   },
-  
+
   // Overall Performance
   overallPerformance: {
     type: Number,
     default: 0
   },
-  
+
   isActive: {
     type: Boolean,
     default: true

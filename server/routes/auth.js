@@ -27,7 +27,8 @@ router.post('/login', async (req, res) => {
         const normalizedEmail = email.toLowerCase().trim();
         console.log("Normalized email:", `"${normalizedEmail}"`);
 
-        const user = await User.findOne({ email: normalizedEmail, isActive: true });
+        const user = await User.findOne({ email: normalizedEmail, isActive: true })
+            .populate('assignedSchools', '_id name');
         console.log("User found in DB:", user ? "Yes" : "No");
 
         if (!user) {
@@ -60,7 +61,8 @@ router.post('/login', async (req, res) => {
                 email: user.email,
                 role: user.role,
                 phone: user.phone,
-                assignedBatches: user.assignedBatches
+                assignedBatches: user.assignedBatches,
+                assignedSchools: user.assignedSchools
             }
         });
     } catch (error) {
@@ -71,7 +73,10 @@ router.post('/login', async (req, res) => {
 // GET /api/auth/me
 router.get('/me', require('../middleware/auth').verifyToken, async (req, res) => {
     try {
-        const user = await User.findById(req.userId).select('-password');
+        const user = await User.findById(req.userId)
+            .select('-password')
+            .populate('assignedSchools', '_id name');
+        console.log("DEBUG: /me user returned with schools:", user.assignedSchools);
         res.json({
             success: true,
             user: {
@@ -80,7 +85,8 @@ router.get('/me', require('../middleware/auth').verifyToken, async (req, res) =>
                 email: user.email,
                 role: user.role,
                 phone: user.phone,
-                assignedBatches: user.assignedBatches
+                assignedBatches: user.assignedBatches,
+                assignedSchools: user.assignedSchools
             }
         });
     } catch (error) {

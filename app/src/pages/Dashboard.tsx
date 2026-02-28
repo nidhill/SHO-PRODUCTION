@@ -19,9 +19,10 @@ import {
   CalendarDays,
   MessageSquare,
   ChevronRight,
-  UserPlus
+  UserPlus,
+  RefreshCw
 } from 'lucide-react';
-import { batchService, studentService, schoolService } from '@/services/api';
+import { batchService, studentService, schoolService, syncService } from '@/services/api';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -47,8 +48,9 @@ interface RecentActivity {
 
 export default function Dashboard() {
   const { user, hasRole } = useAuth();
-      const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
 
   useEffect(() => {
@@ -73,11 +75,46 @@ export default function Dashboard() {
         totalSchools: schoolData.totalSchools
       });
 
-      setRecentActivities([]);
+      // Fetch upcoming batches for the activities feed
+      const allBatchesRes = await batchService.getAll();
+      const allBatches = allBatchesRes.data.batches || [];
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const nextWeek = new Date(today);
+      nextWeek.setDate(today.getDate() + 7);
+
+      const upcoming: RecentActivity[] = allBatches
+        .filter((b: any) => {
+          if (!b.startDate) return false;
+          const sDate = new Date(b.startDate);
+          return sDate >= today && sDate <= nextWeek;
+        })
+        .map((b: any) => ({
+          id: b._id,
+          type: 'notification',
+          title: `Batch Starting Soon: ${b.name}`,
+          description: `Code: ${b.code} | Starts on ${new Date(b.startDate).toLocaleDateString()}`,
+          timestamp: 'Upcoming'
+        }));
+
+      setRecentActivities(upcoming);
     } catch (error) {
       toast.error('Failed to load dashboard data');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSync = async () => {
+    try {
+      setIsSyncing(true);
+      const res = await syncService.syncData();
+      toast.success(res.data.message || 'Sync complete');
+      fetchDashboardData();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to sync data');
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -192,169 +229,185 @@ export default function Dashboard() {
   ];
 
   return (
-    
 
-      
-        <div className="p-4 lg:p-8 max-w-[1200px] mx-auto">
-          {/* Header */}
-          <div className="mb-8 animate-fade-in">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              Welcome back, <span className="text-gradient">{user?.name?.split(' ')[0]}</span>
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {getRoleLabel(user?.role || '')} · Here's your overview for today
-            </p>
-          </div>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-            {statCards.map((stat, index) => {
-              const Icon = stat.icon;
-              return (
-                <Card
-                  key={stat.label}
-                  className="animate-slide-up border-border/60 hover:border-border transition-colors"
-                  style={{ animationDelay: `${index * 0.05}s` }}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{stat.label}</span>
-                      <div className={`w-8 h-8 rounded-lg ${stat.bg} flex items-center justify-center`}>
-                        <Icon className={`h-4 w-4 ${stat.color}`} />
-                      </div>
-                    </div>
-                    <div className="stat-number">{stat.value}</div>
-                    <p className="text-[11px] text-muted-foreground mt-1">{stat.subtitle}</p>
-                    {(stat as any).hasProgress && (
-                      <Progress value={(stat as any).progressValue || 0} className="mt-2 h-1" />
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
 
-          {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-            {/* Quick Actions */}
-            <Card className="lg:col-span-3 animate-slide-up border-border/60" style={{ animationDelay: '0.15s' }}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold">Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {quickActions.slice(0, 8).map((action) => {
-                    const Icon = action.icon;
-                    return (
-                      <Link key={action.path} to={action.path}>
-                        <div className="group rounded-lg border border-border/50 p-3 hover:bg-accent/50 transition-all duration-150 cursor-pointer">
-                          <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center mb-2 group-hover:bg-primary/10 transition-colors">
-                            <Icon className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                          </div>
-                          <span className="text-xs font-medium">{action.label}</span>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Recent Activity */}
-            <Card className="lg:col-span-2 animate-slide-up border-border/60" style={{ animationDelay: '0.2s' }}>
-              <CardHeader className="flex flex-row items-center justify-between pb-3">
-                <CardTitle className="text-sm font-semibold">Recent Activity</CardTitle>
-                <Link to="/analytics">
-                  <Button variant="ghost" size="sm" className="text-xs h-7 text-muted-foreground hover:text-foreground">
-                    View All <ChevronRight className="ml-0.5 h-3 w-3" />
-                  </Button>
-                </Link>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {recentActivities.map((activity) => (
-                    <div key={activity.id} className="flex items-start gap-3">
-                      <div className={`w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 ${getActivityColor(activity.type)}`}>
-                        {getActivityIcon(activity.type)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium leading-tight">{activity.title}</p>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">{activity.description}</p>
-                        <p className="text-[10px] text-muted-foreground/60 mt-0.5">{activity.timestamp}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Bottom Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-            {/* Student Status */}
-            <Card className="animate-slide-up border-border/60" style={{ animationDelay: '0.25s' }}>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-semibold">Student Distribution</CardTitle>
-                  <Link to="/students">
-                    <Button variant="ghost" size="sm" className="text-xs h-7 text-muted-foreground">
-                      View <ArrowRight className="ml-1 h-3 w-3" />
-                    </Button>
-                  </Link>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {[
-                    { label: 'Active', value: stats?.activeStudents || 0, total: stats?.totalStudents || 1, color: 'bg-emerald-500' },
-                    { label: 'Placed', value: stats?.placedStudents || 0, total: stats?.totalStudents || 1, color: 'bg-blue-500' },
-                    { label: 'Interview Req.', value: stats?.interviewRequired || 0, total: stats?.totalStudents || 1, color: 'bg-amber-500' },
-                  ].map((item) => (
-                    <div key={item.label} className="flex items-center gap-3">
-                      <span className="text-xs font-medium text-muted-foreground w-24">{item.label}</span>
-                      <div className="flex-1 bg-muted rounded-full h-1.5 overflow-hidden">
-                        <div
-                          className={`h-full rounded-full ${item.color} transition-all duration-700`}
-                          style={{ width: `${(item.value / item.total) * 100}%` }}
-                        />
-                      </div>
-                      <Badge variant="secondary" className="min-w-[28px] justify-center text-[11px] font-medium h-5">
-                        {item.value}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Performance */}
-            <Card className="animate-slide-up border-border/60" style={{ animationDelay: '0.3s' }}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold">Performance Overview</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {[
-                    { label: 'Assignment Completion', value: stats?.assignmentCompletionRate || 0, color: 'text-blue-600 dark:text-blue-400' },
-                    { label: 'Average Attendance', value: stats?.averageAttendance || 0, color: 'text-emerald-600 dark:text-emerald-400' },
-                    { label: 'Feedback Score', value: (stats?.averageFeedbackScore || 0) * 20, color: 'text-amber-600 dark:text-amber-400' },
-                    { label: 'Overall Performance', value: 0, color: 'text-violet-600 dark:text-violet-400' },
-                  ].map((metric) => (
-                    <div key={metric.label}>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs font-medium">{metric.label}</span>
-                        <span className={`text-xs font-semibold tabular-nums ${metric.color}`}>
-                          {metric.value.toFixed(0)}%
-                        </span>
-                      </div>
-                      <Progress value={metric.value} className="h-1.5" />
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+    <div className="p-4 lg:p-8 max-w-[1200px] mx-auto">
+      {/* Header */}
+      <div className="mb-8 animate-fade-in flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Welcome back, <span className="text-gradient">{user?.name?.split(' ')[0]}</span>
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {getRoleLabel(user?.role || '')} · Here's your overview for today
+          </p>
         </div>
-      
+
+        {hasRole(['leadership', 'ceo_haca', 'head_academics']) && (
+          <Button
+            onClick={handleSync}
+            disabled={isSyncing}
+            className="gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 shadow-md shadow-violet-600/20"
+          >
+            {isSyncing ? (
+              <><Loader2 className="h-4 w-4 animate-spin" /> Syncing from Sales...</>
+            ) : (
+              <><RefreshCw className="h-4 w-4" /> Sync Sales Data</>
+            )}
+          </Button>
+        )}
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        {statCards.map((stat, index) => {
+          const Icon = stat.icon;
+          return (
+            <Card
+              key={stat.label}
+              className="animate-slide-up border-border/60 hover:border-border transition-colors"
+              style={{ animationDelay: `${index * 0.05}s` }}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{stat.label}</span>
+                  <div className={`w-8 h-8 rounded-lg ${stat.bg} flex items-center justify-center`}>
+                    <Icon className={`h-4 w-4 ${stat.color}`} />
+                  </div>
+                </div>
+                <div className="stat-number">{stat.value}</div>
+                <p className="text-[11px] text-muted-foreground mt-1">{stat.subtitle}</p>
+                {(stat as any).hasProgress && (
+                  <Progress value={(stat as any).progressValue || 0} className="mt-2 h-1" />
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        {/* Quick Actions */}
+        <Card className="lg:col-span-3 animate-slide-up border-border/60" style={{ animationDelay: '0.15s' }}>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold">Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {quickActions.slice(0, 8).map((action) => {
+                const Icon = action.icon;
+                return (
+                  <Link key={action.path} to={action.path}>
+                    <div className="group rounded-lg border border-border/50 p-3 hover:bg-accent/50 transition-all duration-150 cursor-pointer">
+                      <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center mb-2 group-hover:bg-primary/10 transition-colors">
+                        <Icon className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                      </div>
+                      <span className="text-xs font-medium">{action.label}</span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Activity */}
+        <Card className="lg:col-span-2 animate-slide-up border-border/60" style={{ animationDelay: '0.2s' }}>
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardTitle className="text-sm font-semibold">Recent Activity</CardTitle>
+            <Link to="/analytics">
+              <Button variant="ghost" size="sm" className="text-xs h-7 text-muted-foreground hover:text-foreground">
+                View All <ChevronRight className="ml-0.5 h-3 w-3" />
+              </Button>
+            </Link>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {recentActivities.map((activity) => (
+                <div key={activity.id} className="flex items-start gap-3">
+                  <div className={`w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 ${getActivityColor(activity.type)}`}>
+                    {getActivityIcon(activity.type)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium leading-tight">{activity.title}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">{activity.description}</p>
+                    <p className="text-[10px] text-muted-foreground/60 mt-0.5">{activity.timestamp}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Bottom Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+        {/* Student Status */}
+        <Card className="animate-slide-up border-border/60" style={{ animationDelay: '0.25s' }}>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold">Student Distribution</CardTitle>
+              <Link to="/students">
+                <Button variant="ghost" size="sm" className="text-xs h-7 text-muted-foreground">
+                  View <ArrowRight className="ml-1 h-3 w-3" />
+                </Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {[
+                { label: 'Active', value: stats?.activeStudents || 0, total: stats?.totalStudents || 1, color: 'bg-emerald-500' },
+                { label: 'Placed', value: stats?.placedStudents || 0, total: stats?.totalStudents || 1, color: 'bg-blue-500' },
+                { label: 'Interview Req.', value: stats?.interviewRequired || 0, total: stats?.totalStudents || 1, color: 'bg-amber-500' },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center gap-3">
+                  <span className="text-xs font-medium text-muted-foreground w-24">{item.label}</span>
+                  <div className="flex-1 bg-muted rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${item.color} transition-all duration-700`}
+                      style={{ width: `${(item.value / item.total) * 100}%` }}
+                    />
+                  </div>
+                  <Badge variant="secondary" className="min-w-[28px] justify-center text-[11px] font-medium h-5">
+                    {item.value}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Performance */}
+        <Card className="animate-slide-up border-border/60" style={{ animationDelay: '0.3s' }}>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold">Performance Overview</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {[
+                { label: 'Assignment Completion', value: stats?.assignmentCompletionRate || 0, color: 'text-blue-600 dark:text-blue-400' },
+                { label: 'Average Attendance', value: stats?.averageAttendance || 0, color: 'text-emerald-600 dark:text-emerald-400' },
+                { label: 'Feedback Score', value: (stats?.averageFeedbackScore || 0) * 20, color: 'text-amber-600 dark:text-amber-400' },
+                { label: 'Overall Performance', value: 0, color: 'text-violet-600 dark:text-violet-400' },
+              ].map((metric) => (
+                <div key={metric.label}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-medium">{metric.label}</span>
+                    <span className={`text-xs font-semibold tabular-nums ${metric.color}`}>
+                      {metric.value.toFixed(0)}%
+                    </span>
+                  </div>
+                  <Progress value={metric.value} className="h-1.5" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+
   );
 }

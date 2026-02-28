@@ -22,6 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (token) {
       authService.getCurrentUser()
         .then(response => {
+          console.log("ME RESPONSE USER:", response.data.user);
           setUser(response.data.user);
         })
         .catch(() => {
@@ -38,6 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     const response = await authService.login(email, password);
     const { token, user } = response.data;
+    console.log("LOGIN RESPONSE USER:", user);
     localStorage.setItem('token', token);
     setUser(user);
   };
