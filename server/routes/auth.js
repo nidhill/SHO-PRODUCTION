@@ -8,6 +8,7 @@ const User = require('../models/User');
 const AuditLog = require('../models/AuditLog');
 const { generateToken, verifyToken } = require('../middleware/auth');
 const { sendEmail } = require('../services/email');
+const supabase = require('../config/supabase');
 
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
@@ -35,8 +36,29 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ success: false, message: 'Invalid credentials - User not found' });
         }
 
-        const isMatch = await user.comparePassword(password);
-        console.log("Password match:", isMatch ? "Yes" : "No");
+        let isMatch = false;
+
+        // 1. Try Local password first (fastest, for all synced users)
+        isMatch = await user.comparePassword(password);
+        console.log("Local password match:", isMatch ? "Yes" : "No");
+
+        // 2. If local fails, fallback to Supabase Auth (for users who only have Supabase accounts)
+        if (!isMatch) {
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: normalizedEmail,
+                    password: password,
+                });
+                if (data && data.session) {
+                    isMatch = true;
+                    console.log("Supabase Auth successful!");
+                } else {
+                    console.log("Supabase Auth failed:", error?.message);
+                }
+            } catch (err) {
+                console.error("Supabase Auth Error:", err);
+            }
+        }
 
         if (!isMatch) {
             return res.status(401).json({ success: false, message: 'Invalid credentials - Password incorrect' });
@@ -61,6 +83,7 @@ router.post('/login', async (req, res) => {
                 email: user.email,
                 role: user.role,
                 phone: user.phone,
+                school: user.school,
                 assignedBatches: user.assignedBatches,
                 assignedSchools: user.assignedSchools
             }
@@ -85,12 +108,28 @@ router.get('/me', require('../middleware/auth').verifyToken, async (req, res) =>
                 email: user.email,
                 role: user.role,
                 phone: user.phone,
+                school: user.school,
                 assignedBatches: user.assignedBatches,
                 assignedSchools: user.assignedSchools
             }
         });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// PATCH /api/auth/profile  — update own name/phone
+router.patch('/profile', verifyToken, async (req, res) => {
+    try {
+        const { name, phone } = req.body;
+        const user = await User.findById(req.userId);
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+        if (name) user.name = name.trim();
+        if (phone !== undefined) user.phone = phone;
+        await user.save({ validateBeforeSave: false });
+        res.json({ success: true, user: { id: user._id, name: user.name, email: user.email, role: user.role, phone: user.phone } });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
     }
 });
 

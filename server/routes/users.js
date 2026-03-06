@@ -7,15 +7,22 @@ const { verifyToken } = require('../middleware/auth');
 // GET /api/users
 router.get('/', verifyToken, async (req, res) => {
     try {
-        const users = await User.find().select('-password');
+        const user = req.user;
+        let filter = { isActive: true };
+
+        // Admin/leadership/ceo see everybody; school-level roles see all users
+        // (needed so School Management page can pick SHOs/SSHOs/Mentors)
+        const users = await User.find(filter).select('-password');
         res.json({
             success: true,
             users: users.map(u => ({
+                _id: u._id,
                 id: u._id,
                 name: u.name,
                 email: u.email,
                 role: u.role,
                 phone: u.phone,
+                school: u.school,
                 assignedBatches: u.assignedBatches
             }))
         });

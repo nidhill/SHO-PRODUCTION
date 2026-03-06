@@ -39,7 +39,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { userService, batchService } from '@/services/api';
-import { Loader2, Plus, Search, User as UserIcon, Mail, Phone, Lock, Trash2, GraduationCap, Layers } from 'lucide-react';
+import { Loader2, Plus, Search, User as UserIcon, Mail, Phone, Lock, Trash2, GraduationCap } from 'lucide-react';
 import { toast } from 'sonner';
 import type { User } from '@/types';
 
@@ -128,9 +128,12 @@ export default function Users() {
 
     const getRoleBadgeColor = (role: string) => {
         switch (role) {
-            case 'leadership': return 'bg-amber-500/10 text-amber-600 border-amber-500/20';
+            case 'leadership':
+            case 'ceo_haca': return 'bg-amber-500/10 text-amber-600 border-amber-500/20';
             case 'sho': return 'bg-blue-500/10 text-blue-600 border-blue-500/20';
-            case 'ssho': return 'bg-violet-500/10 text-violet-600 border-violet-500/20';
+            case 'ssho':
+            case 'academic':
+            case 'pl': return 'bg-violet-500/10 text-violet-600 border-violet-500/20';
             case 'mentor': return 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20';
             default: return 'bg-slate-500/10 text-slate-600 border-slate-500/20';
         }
@@ -226,7 +229,10 @@ export default function Users() {
                                                 <SelectItem value="sho">SHO (Student Happiness Officer)</SelectItem>
                                                 <SelectItem value="ssho">SSHO (Senior SHO)</SelectItem>
                                                 <SelectItem value="mentor">Mentor</SelectItem>
+                                                <SelectItem value="academic">Academic Lead</SelectItem>
                                                 <SelectItem value="leadership">Leadership (Admin)</SelectItem>
+                                                <SelectItem value="ceo_haca">CEO / Leadership</SelectItem>
+                                                <SelectItem value="pl">Project Lead (Academic)</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>

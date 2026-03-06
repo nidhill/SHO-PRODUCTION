@@ -1,23 +1,36 @@
 const express = require('express');
 const router = express.Router();
 const Student = require('../models/Student');
+const School = require('../models/School');
+const Batch = require('../models/Batch');
 const { verifyToken } = require('../middleware/auth');
+
+// Build correct student filter per role
+async function buildStudentFilter(user, base = { isActive: true }) {
+    const superRoles = ['admin', 'leadership', 'ceo_haca'];
+    if (superRoles.includes(user.role)) return base;
+
+    if (['ssho', 'academic', 'pl'].includes(user.role)) {
+        if (user.assignedSchools?.length > 0)
+            return { ...base, school: { $in: user.assignedSchools } };
+        if (user.school) {
+            const s = await School.findOne({
+                $or: [{ name: user.school }, { name: { $regex: user.school, $options: 'i' } }]
+            });
+            if (s) return { ...base, school: s._id };
+        }
+        return { ...base, _id: { $in: [] } };
+    }
+
+    // SHO / mentor: only students in their batches
+    const myBatches = await Batch.find({ assignedSHO: user._id, isActive: true }, '_id');
+    return { ...base, batch: { $in: myBatches.map(b => b._id) } };
+}
 
 // GET /api/students
 router.get('/', verifyToken, async (req, res) => {
     try {
-        const user = req.user;
-        let filter = { isActive: true };
-
-        if (user.role === 'sho' || user.role === 'mentor') {
-            filter.batch = { $in: user.assignedBatches || [] };
-        } else if (user.role === 'ssho') {
-            const dbSchoolName = user.school ? user.school.replace('_', ' ') : '';
-            const dbSchool = await require('../models/School').findOne({ name: new RegExp('^' + dbSchoolName.split(' ')[0], 'i') });
-            filter.school = dbSchool ? dbSchool._id : null;
-        }
-        // leadership: no filter, sees all
-
+        const filter = await buildStudentFilter(req.user);
         const students = await Student.find(filter)
             .populate('batch', 'name code')
             .populate('school', 'name address place');
@@ -30,18 +43,7 @@ router.get('/', verifyToken, async (req, res) => {
 // GET /api/students/analytics
 router.get('/analytics', verifyToken, async (req, res) => {
     try {
-        const user = req.user;
-        let filter = { isActive: true };
-
-        if (user.role === 'sho' || user.role === 'mentor') {
-            filter.batch = { $in: user.assignedBatches || [] };
-        } else if (user.role === 'ssho') {
-            const dbSchoolName = user.school ? user.school.replace('_', ' ') : '';
-            const dbSchool = await require('../models/School').findOne({ name: new RegExp('^' + dbSchoolName.split(' ')[0], 'i') });
-            filter.school = dbSchool ? dbSchool._id : null;
-        }
-        // leadership, ceo_haca, head_academics: no filter, sees all
-
+        const filter = await buildStudentFilter(req.user);
         const totalStudents = await Student.countDocuments(filter);
         const activeStudents = await Student.countDocuments({ ...filter, status: 'active' });
         const placedStudents = await Student.countDocuments({ ...filter, status: 'placed' });
@@ -49,13 +51,7 @@ router.get('/analytics', verifyToken, async (req, res) => {
         const revokedStudents = await Student.countDocuments({ ...filter, status: 'revoked' });
         res.json({
             success: true,
-            analytics: {
-                totalStudents,
-                activeStudents,
-                placedStudents,
-                interviewRequired,
-                revokedStudents
-            }
+            analytics: { totalStudents, activeStudents, placedStudents, interviewRequired, revokedStudents }
         });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

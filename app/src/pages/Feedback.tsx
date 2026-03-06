@@ -41,7 +41,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 export default function Feedback() {
-      const [feedback, setFeedback] = useState<FeedbackItem[]>([]);
+  const [feedback, setFeedback] = useState<FeedbackItem[]>([]);
   const [filteredFeedback, setFilteredFeedback] = useState<FeedbackItem[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
@@ -49,10 +49,20 @@ export default function Feedback() {
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedFeedback, setSelectedFeedback] = useState<FeedbackItem | null>(null);
+  const [editFeedback, setEditFeedback] = useState<any>({
+    ratings: { overall: 5, communication: 5, punctuality: 5, understanding: 5, participation: 5 },
+    comments: '',
+    areasOfImprovement: '',
+    strengths: ''
+  });
   const [newFeedback, setNewFeedback] = useState({
     type: 'student',
     student: '',
     batch: '',
+    formLink: '',
     ratings: {
       overall: 5,
       communication: 5,
@@ -112,17 +122,32 @@ export default function Feedback() {
 
   const handleCreateFeedback = async () => {
     try {
-      await feedbackService.create({
-        ...newFeedback,
-        areasOfImprovement: newFeedback.areasOfImprovement.split(',').map(s => s.trim()).filter(Boolean),
-        strengths: newFeedback.strengths.split(',').map(s => s.trim()).filter(Boolean)
+      if (!newFeedback.formLink?.trim()) {
+        toast.error('Google Form Link is required');
+        return;
+      }
+      if (newFeedback.type === 'student' && !newFeedback.student) {
+        toast.error('Please select a student');
+        return;
+      }
+      if (newFeedback.type === 'batch' && !newFeedback.batch) {
+        toast.error('Please select a batch');
+        return;
+      }
+
+      await feedbackService.sendForm({
+        targetType: newFeedback.type,
+        targetId: newFeedback.type === 'student' ? newFeedback.student : newFeedback.batch,
+        formLink: newFeedback.formLink
       });
-      toast.success('Feedback created successfully');
+
+      toast.success('Feedback request sent successfully');
       setIsCreateDialogOpen(false);
       setNewFeedback({
         type: 'student',
         student: '',
         batch: '',
+        formLink: '',
         ratings: {
           overall: 5,
           communication: 5,
@@ -136,7 +161,31 @@ export default function Feedback() {
       });
       fetchData();
     } catch (error) {
-      toast.error('Failed to create feedback');
+      toast.error('Failed to send feedback request');
+    }
+  };
+
+  const handleUpdateFeedback = async () => {
+    if (!selectedFeedback) return;
+    try {
+      if (!editFeedback.comments.trim()) {
+        toast.error('Comments are required');
+        return;
+      }
+
+      const payload: any = {
+        ratings: editFeedback.ratings,
+        comments: editFeedback.comments,
+        areasOfImprovement: editFeedback.areasOfImprovement.split(',').map((s: string) => s.trim()).filter(Boolean),
+        strengths: editFeedback.strengths.split(',').map((s: string) => s.trim()).filter(Boolean)
+      };
+
+      await feedbackService.update(selectedFeedback._id, payload);
+      toast.success('Feedback updated successfully');
+      setIsEditDialogOpen(false);
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to update feedback');
     }
   };
 
@@ -146,9 +195,13 @@ export default function Feedback() {
       batch: 'secondary',
       session: 'outline',
       mentor: 'destructive',
-      general: 'secondary'
+      general: 'secondary',
+      google_form: 'default'
     };
-    return <Badge variant={variants[type] || 'default'}>{type}</Badge>;
+    const labels: Record<string, string> = {
+      google_form: 'Google Form'
+    };
+    return <Badge variant={variants[type] || 'default'}>{labels[type] || type.charAt(0).toUpperCase() + type.slice(1)}</Badge>;
   };
 
   if (isLoading) {
@@ -160,216 +213,170 @@ export default function Feedback() {
   }
 
   return (
-    
 
-      
-        <div className="p-4 lg:p-8">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight">Feedback</h1>
-              <p className="text-muted-foreground mt-1">
-                Manage and track feedback
-              </p>
-            </div>
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Feedback
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Add New Feedback</DialogTitle>
-                  <DialogDescription>
-                    Provide feedback for students or batches
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 mt-4">
-                  <div>
-                    <Label>Type</Label>
-                    <Select
-                      value={newFeedback.type}
-                      onValueChange={(value: any) => setNewFeedback({ ...newFeedback, type: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="student">Student</SelectItem>
-                        <SelectItem value="batch">Batch</SelectItem>
-                        <SelectItem value="session">Session</SelectItem>
-                        <SelectItem value="general">General</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
 
-                  {newFeedback.type === 'student' && (
-                    <div>
-                      <Label>Student</Label>
-                      <Select
-                        value={newFeedback.student}
-                        onValueChange={(value) => setNewFeedback({ ...newFeedback, student: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select student" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {students.map(student => (
-                            <SelectItem key={student._id} value={student._id}>{student.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
 
-                  {(newFeedback.type === 'batch' || newFeedback.type === 'session') && (
-                    <div>
-                      <Label>Batch</Label>
-                      <Select
-                        value={newFeedback.batch}
-                        onValueChange={(value) => setNewFeedback({ ...newFeedback, batch: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select batch" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {batches.map(batch => (
-                            <SelectItem key={batch._id} value={batch._id}>{batch.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
+    <div className="p-4 lg:p-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Feedback</h1>
+          <p className="text-muted-foreground mt-1">
+            Manage and track feedback
+          </p>
+        </div>
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Feedback
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Add New Feedback</DialogTitle>
+              <DialogDescription>
+                Provide feedback for students or batches
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 mt-4">
+              <div>
+                <Label>Type</Label>
+                <Select
+                  value={newFeedback.type}
+                  onValueChange={(value: any) => setNewFeedback({ ...newFeedback, type: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="student">Student</SelectItem>
+                    <SelectItem value="batch">Batch</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-                  <div className="space-y-2">
-                    <Label>Ratings</Label>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-xs">Overall</Label>
-                        <Select
-                          value={newFeedback.ratings.overall.toString()}
-                          onValueChange={(value) => setNewFeedback({
-                            ...newFeedback,
-                            ratings: { ...newFeedback.ratings, overall: parseInt(value) }
-                          })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {[1, 2, 3, 4, 5].map(n => (
-                              <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label className="text-xs">Communication</Label>
-                        <Select
-                          value={newFeedback.ratings.communication.toString()}
-                          onValueChange={(value) => setNewFeedback({
-                            ...newFeedback,
-                            ratings: { ...newFeedback.ratings, communication: parseInt(value) }
-                          })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {[1, 2, 3, 4, 5].map(n => (
-                              <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label>Comments</Label>
-                    <Textarea
-                      value={newFeedback.comments}
-                      onChange={(e) => setNewFeedback({ ...newFeedback, comments: e.target.value })}
-                      placeholder="Enter your feedback comments"
-                    />
-                  </div>
-
-                  <div>
-                    <Label>Areas of Improvement (comma separated)</Label>
-                    <Input
-                      value={newFeedback.areasOfImprovement}
-                      onChange={(e) => setNewFeedback({ ...newFeedback, areasOfImprovement: e.target.value })}
-                      placeholder="e.g., Communication, Punctuality"
-                    />
-                  </div>
-
-                  <div>
-                    <Label>Strengths (comma separated)</Label>
-                    <Input
-                      value={newFeedback.strengths}
-                      onChange={(e) => setNewFeedback({ ...newFeedback, strengths: e.target.value })}
-                      placeholder="e.g., Leadership, Problem Solving"
-                    />
-                  </div>
-
-                  <Button onClick={handleCreateFeedback} className="w-full">
-                    Submit Feedback
-                  </Button>
+              {newFeedback.type === 'student' && (
+                <div>
+                  <Label>Student</Label>
+                  <Select
+                    value={newFeedback.student}
+                    onValueChange={(value) => setNewFeedback({ ...newFeedback, student: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select student" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {students.map(student => (
+                        <SelectItem key={student._id} value={student._id}>{student.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              </DialogContent>
-            </Dialog>
-          </div>
+              )}
 
-          {/* Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search feedback..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
+              {newFeedback.type === 'batch' && (
+                <div>
+                  <Label>Batch</Label>
+                  <Select
+                    value={newFeedback.batch}
+                    onValueChange={(value) => setNewFeedback({ ...newFeedback, batch: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select batch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {batches.map(batch => (
+                        <SelectItem key={batch._id} value={batch._id}>{batch.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div>
+                <Label>Google Form Link</Label>
+                <Input
+                  value={newFeedback.formLink}
+                  onChange={(e) => setNewFeedback({ ...newFeedback, formLink: e.target.value })}
+                  placeholder="https://forms.gle/..."
+                />
+              </div>
+
+              <Button onClick={handleCreateFeedback} className="w-full">
+                Send Feedback Request
+              </Button>
             </div>
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger>
-                <MessageSquare className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Filter by type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="student">Student</SelectItem>
-                <SelectItem value="batch">Batch</SelectItem>
-                <SelectItem value="session">Session</SelectItem>
-                <SelectItem value="general">General</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          </DialogContent>
+        </Dialog>
+      </div>
 
-          {/* Feedback List */}
-          <div className="space-y-4">
-            {filteredFeedback.map((item) => (
-              <Card key={item._id}>
-                <CardContent className="p-6">
-                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        {getTypeBadge(item.type)}
-                        {item.student && (
-                          <div className="flex items-center gap-1 text-sm">
-                            <User className="h-4 w-4" />
-                            <span>{item.student.name}</span>
-                          </div>
-                        )}
-                        {item.batch && (
-                          <div className="flex items-center gap-1 text-sm">
-                            <Users className="h-4 w-4" />
-                            <span>{item.batch.name}</span>
-                          </div>
-                        )}
+      {/* Filters */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search feedback..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <SelectTrigger>
+            <MessageSquare className="h-4 w-4 mr-2" />
+            <SelectValue placeholder="Filter by type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Types</SelectItem>
+            <SelectItem value="student">Student</SelectItem>
+            <SelectItem value="batch">Batch</SelectItem>
+            <SelectItem value="session">Session</SelectItem>
+            <SelectItem value="general">General</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Feedback List */}
+      <div className="space-y-4">
+        {filteredFeedback.map((item) => (
+          <Card key={item._id}>
+            <CardContent className="p-6">
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    {getTypeBadge(item.type)}
+                    {item.student && (
+                      <div className="flex items-center gap-1 text-sm">
+                        <User className="h-4 w-4" />
+                        <span>{item.student.name}</span>
                       </div>
+                    )}
+                    {item.batch && (
+                      <div className="flex items-center gap-1 text-sm">
+                        <Users className="h-4 w-4" />
+                        <span>{item.batch.name}</span>
+                      </div>
+                    )}
+                  </div>
+                  {item.type === 'google_form' ? (
+                    <div className="mb-3">
+                      <p className="text-muted-foreground mb-2">{item.comments}</p>
+                      {item.formLink && (
+                        <div className="bg-muted p-3 flex items-center gap-2 rounded-md">
+                          <MessageSquare className="h-4 w-4 text-primary" />
+                          <a href={item.formLink} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:underline break-all">
+                            {item.formLink}
+                          </a>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1 text-sm mt-4">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <span>Dispatched By: {item.givenBy?.name}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
                       <p className="text-muted-foreground mb-3">{item.comments}</p>
                       <div className="flex items-center gap-4 text-sm">
                         <div className="flex items-center gap-1">
@@ -401,34 +408,197 @@ export default function Feedback() {
                           </div>
                         </div>
                       )}
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
-                        <DropdownMenuItem>Edit Feedback</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                    </>
+                  )}
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => {
+                      setSelectedFeedback(item);
+                      setIsViewDialogOpen(true);
+                    }}>View Details</DropdownMenuItem>
+                    {item.type !== 'google_form' && (
+                      <DropdownMenuItem onClick={() => {
+                        setSelectedFeedback(item);
+                        setEditFeedback({
+                          ratings: item.ratings || { overall: 5, communication: 5, punctuality: 5, understanding: 5, participation: 5 },
+                          comments: item.comments || '',
+                          areasOfImprovement: item.areasOfImprovement?.join(', ') || '',
+                          strengths: item.strengths?.join(', ') || ''
+                        });
+                        setIsEditDialogOpen(true);
+                      }}>Edit Feedback</DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
-          {filteredFeedback.length === 0 && (
-            <div className="text-center py-12">
-              <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium">No feedback found</h3>
-              <p className="text-muted-foreground">
-                Add your first feedback to get started
-              </p>
+      {filteredFeedback.length === 0 && (
+        <div className="text-center py-12">
+          <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium">No feedback found</h3>
+          <p className="text-muted-foreground">
+            Add your first feedback to get started
+          </p>
+        </div>
+      )}
+
+      {/* View Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Feedback Details</DialogTitle>
+            <DialogDescription>Read-only view of the feedback</DialogDescription>
+          </DialogHeader>
+          {selectedFeedback && (
+            <div className="space-y-4 mt-2">
+              {selectedFeedback.type === 'google_form' ? (
+                <>
+                  <div>
+                    <Label className="text-muted-foreground">Type</Label>
+                    <Badge className="mt-1 block w-fit">Google Form</Badge>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Form Link</Label>
+                    <div className="mt-1 bg-muted p-3 rounded-md">
+                      <a href={selectedFeedback.formLink} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:underline break-all">
+                        {selectedFeedback.formLink}
+                      </a>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Dispatched By</Label>
+                    <p className="mt-1 text-sm">{selectedFeedback.givenBy?.name}</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <Label className="text-muted-foreground">Comments</Label>
+                    <p className="mt-1 text-sm">{selectedFeedback.comments}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Overall Rating</Label>
+                    <p className="mt-1 text-sm">{selectedFeedback.ratings?.overall}/5</p>
+                  </div>
+                  {selectedFeedback.areasOfImprovement?.length > 0 && (
+                    <div>
+                      <Label className="text-muted-foreground">Areas of Improvement</Label>
+                      <div className="mt-1 flex flex-wrap gap-2">
+                        {selectedFeedback.areasOfImprovement.map((area, idx) => (
+                          <Badge key={idx} variant="outline">{area}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {selectedFeedback.strengths?.length > 0 && (
+                    <div>
+                      <Label className="text-muted-foreground">Strengths</Label>
+                      <div className="mt-1 flex flex-wrap gap-2">
+                        {selectedFeedback.strengths.map((str, idx) => (
+                          <Badge key={idx} variant="secondary">{str}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
-        </div>
-      
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Feedback</DialogTitle>
+            <DialogDescription>Update the existing feedback record</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label>Ratings</Label>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs">Overall</Label>
+                  <Select
+                    value={editFeedback.ratings.overall.toString()}
+                    onValueChange={(value) => setEditFeedback({
+                      ...editFeedback,
+                      ratings: { ...editFeedback.ratings, overall: parseInt(value) }
+                    })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {[1, 2, 3, 4, 5].map(n => (
+                        <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Communication</Label>
+                  <Select
+                    value={editFeedback.ratings.communication.toString()}
+                    onValueChange={(value) => setEditFeedback({
+                      ...editFeedback,
+                      ratings: { ...editFeedback.ratings, communication: parseInt(value) }
+                    })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {[1, 2, 3, 4, 5].map(n => (
+                        <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <Label>Comments</Label>
+              <Textarea
+                value={editFeedback.comments}
+                onChange={(e) => setEditFeedback({ ...editFeedback, comments: e.target.value })}
+                placeholder="Enter your feedback comments"
+              />
+            </div>
+
+            <div>
+              <Label>Areas of Improvement (comma separated)</Label>
+              <Input
+                value={editFeedback.areasOfImprovement}
+                onChange={(e) => setEditFeedback({ ...editFeedback, areasOfImprovement: e.target.value })}
+                placeholder="e.g., Communication, Punctuality"
+              />
+            </div>
+
+            <div>
+              <Label>Strengths (comma separated)</Label>
+              <Input
+                value={editFeedback.strengths}
+                onChange={(e) => setEditFeedback({ ...editFeedback, strengths: e.target.value })}
+                placeholder="e.g., Leadership, Problem Solving"
+              />
+            </div>
+
+            <Button onClick={handleUpdateFeedback} className="w-full">
+              Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+
   );
 }

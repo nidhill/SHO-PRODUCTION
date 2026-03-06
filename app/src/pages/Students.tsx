@@ -6,35 +6,31 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  Loader2,
-  Search,
-  ExternalLink,
-  Users,
-  UserCheck,
-  AlertCircle,
-  Filter,
-  GraduationCap,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Loader2, Search, ExternalLink, Users, UserCheck, AlertCircle,
+  Filter, GraduationCap, MoreHorizontal, ArrowRightLeft,
 } from 'lucide-react';
 import { studentService, batchService } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
 import type { Student, Batch } from '@/types';
 import { toast } from 'sonner';
 
+// Roles allowed to transfer students
+const TRANSFER_ROLES = ['ssho', 'academic', 'pl', 'admin', 'leadership', 'ceo_haca'];
+
 export default function Students() {
+  const { user } = useAuth();
   const [students, setStudents] = useState<Student[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,9 +38,14 @@ export default function Students() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [batchFilter, setBatchFilter] = useState('all');
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  // Transfer state
+  const [transferStudent, setTransferStudent] = useState<Student | null>(null);
+  const [targetBatchId, setTargetBatchId] = useState('');
+  const [isTransferring, setIsTransferring] = useState(false);
+
+  const canTransfer = user && TRANSFER_ROLES.includes(user.role);
+
+  useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     try {
@@ -77,6 +78,30 @@ export default function Students() {
     active: students.filter(s => s.status === 'active').length,
     placed: students.filter(s => s.status === 'placed').length,
     interviewReq: students.filter(s => s.status === 'interview_required').length,
+  };
+
+  // ── Transfer single student ─────────────────────────────
+  const handleTransfer = async () => {
+    if (!transferStudent || !targetBatchId) return;
+    setIsTransferring(true);
+    try {
+      // Use student update endpoint to change batch directly
+      await studentService.update(transferStudent._id, { batch: targetBatchId });
+      // Recalculate student counts
+      const srcBatch = transferStudent.batch?._id;
+      if (srcBatch) {
+        const srcCount = students.filter(s => s.batch?._id === srcBatch && s._id !== transferStudent._id).length;
+        await batchService.update(srcBatch, { totalStudents: srcCount });
+      }
+      toast.success(`${transferStudent.name} moved to new batch ✅`);
+      setTransferStudent(null);
+      setTargetBatchId('');
+      fetchData();
+    } catch {
+      toast.error('Transfer failed');
+    } finally {
+      setIsTransferring(false);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -113,8 +138,6 @@ export default function Students() {
           <h1 className="text-2xl font-semibold tracking-tight">Students</h1>
           <p className="text-sm text-muted-foreground mt-1">Manage and track {students.length} students</p>
         </div>
-
-
       </div>
 
       {/* Stats Grid */}
@@ -243,11 +266,31 @@ export default function Students() {
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Link to={`/students/${student._id}`}>
-                      <Button variant="ghost" size="sm" className="h-7 text-xs opacity-0 group-hover:opacity-100 transition-opacity">
-                        View <ExternalLink className="ml-1 h-3 w-3" />
-                      </Button>
-                    </Link>
+                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Link to={`/students/${student._id}`}>
+                        <Button variant="ghost" size="sm" className="h-7 text-xs">
+                          View <ExternalLink className="ml-1 h-3 w-3" />
+                        </Button>
+                      </Link>
+                      {canTransfer && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              className="text-xs gap-2 cursor-pointer"
+                              onClick={() => { setTransferStudent(student); setTargetBatchId(''); }}
+                            >
+                              <ArrowRightLeft className="h-3.5 w-3.5" />
+                              Transfer to Another Batch
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -263,6 +306,73 @@ export default function Students() {
           )}
         </CardContent>
       </Card>
+
+      {/* ── Transfer Single Student Dialog ─────────────────── */}
+      <Dialog open={!!transferStudent} onOpenChange={() => { setTransferStudent(null); setTargetBatchId(''); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ArrowRightLeft className="h-4 w-4" /> Transfer Student
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            {/* Student info */}
+            <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
+              <div className="w-9 h-9 rounded-md bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
+                {transferStudent?.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+              </div>
+              <div>
+                <p className="text-sm font-medium">{transferStudent?.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  Currently in: <span className="font-medium text-foreground">{transferStudent?.batch?.name || 'No batch'}</span>
+                </p>
+              </div>
+            </div>
+
+            {/* Target batch selector */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground block mb-1.5">
+                Transfer to Batch
+              </label>
+              <Select value={targetBatchId} onValueChange={setTargetBatchId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select target batch…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {batches
+                    .filter(b => b._id !== transferStudent?.batch?._id)
+                    .map(b => (
+                      <SelectItem key={b._id} value={b._id}>
+                        {b.name} <span className="text-muted-foreground">({b.code})</span>
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {targetBatchId && (
+              <p className="text-xs text-muted-foreground bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded px-3 py-2">
+                ⚠️ <strong>{transferStudent?.name}</strong> will be moved from <strong>{transferStudent?.batch?.name}</strong> to <strong>{batches.find(b => b._id === targetBatchId)?.name}</strong>.
+              </p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setTransferStudent(null); setTargetBatchId(''); }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleTransfer}
+              disabled={!targetBatchId || isTransferring}
+            >
+              {isTransferring
+                ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Transferring…</>
+                : <><ArrowRightLeft className="h-4 w-4 mr-2" />Confirm Transfer</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

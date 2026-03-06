@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Notification = require('../models/Notification');
 const { verifyToken } = require('../middleware/auth');
+const { sendEmail } = require('../services/email');
 
 // GET /api/notifications
 router.get('/', verifyToken, async (req, res) => {
@@ -49,6 +50,43 @@ router.post('/', verifyToken, async (req, res) => {
     try {
         const data = { ...req.body, sentBy: req.userId, sentAt: new Date() };
         const notification = await Notification.create(data);
+
+        // Fire-and-forget email to all recipients
+        (async () => {
+            try {
+                const Student = require('../models/Student');
+                let studentEmails = [];
+
+                if (data.recipients?.allStudents) {
+                    const allStudents = await Student.find({ isActive: true }).select('email name');
+                    studentEmails = allStudents.filter(s => s.email).map(s => s.email);
+                } else {
+                    if (data.recipients?.students?.length > 0) {
+                        const students = await Student.find({ _id: { $in: data.recipients.students } }).select('email');
+                        studentEmails.push(...students.filter(s => s.email).map(s => s.email));
+                    }
+                    if (data.recipients?.batches?.length > 0) {
+                        const batchStudents = await Student.find({ batch: { $in: data.recipients.batches }, isActive: true }).select('email');
+                        studentEmails.push(...batchStudents.filter(s => s.email).map(s => s.email));
+                    }
+                }
+
+                // Deduplicate
+                studentEmails = [...new Set(studentEmails)];
+
+                if (studentEmails.length > 0) {
+                    const html = `<html><body>
+                        <h2>${data.title || 'New Notification'}</h2>
+                        <p>${data.message}</p>
+                        <br/><p>— SHO App Team</p>
+                    </body></html>`;
+                    await sendEmail(studentEmails, data.title || 'Notification - SHO App', html);
+                }
+            } catch (err) {
+                console.error('Failed to send notification emails:', err.message);
+            }
+        })();
+
         res.status(201).json({ success: true, notification });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

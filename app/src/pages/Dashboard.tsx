@@ -20,7 +20,10 @@ import {
   MessageSquare,
   ChevronRight,
   UserPlus,
-  RefreshCw
+  RefreshCw,
+  AlertTriangle,
+  Phone,
+  Mail
 } from 'lucide-react';
 import { batchService, studentService, schoolService, syncService } from '@/services/api';
 import { Link } from 'react-router-dom';
@@ -52,9 +55,14 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [upcomingBatches, setUpcomingBatches] = useState<any[]>([]);
+  const [expandedBatch, setExpandedBatch] = useState<string | null>(null);
 
   useEffect(() => {
     fetchDashboardData();
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
   }, []);
 
   const fetchDashboardData = async () => {
@@ -64,7 +72,7 @@ export default function Dashboard() {
       const studentResponse = await studentService.getAnalytics();
 
       let schoolData = { totalSchools: 0 };
-      if (hasRole(['leadership', 'head_academics', 'ceo_haca', 'sho_team_lead', 'ssho', 'academic', 'pl'])) {
+      if (hasRole(['leadership', 'admin', 'ssho', 'academic', 'ceo_haca', 'pl'])) {
         const schoolResponse = await schoolService.getAnalytics();
         schoolData = schoolResponse.data.analytics;
       }
@@ -74,6 +82,14 @@ export default function Dashboard() {
         ...studentResponse.data.analytics,
         totalSchools: schoolData.totalSchools
       });
+
+      // Fetch batches starting within 2 days
+      try {
+        const upcomingRes = await syncService.getUpcomingBatches();
+        setUpcomingBatches(upcomingRes.data.batches || []);
+      } catch {
+        setUpcomingBatches([]);
+      }
 
       // Fetch upcoming batches for the activities feed
       const allBatchesRes = await batchService.getAll();
@@ -121,14 +137,13 @@ export default function Dashboard() {
   const getRoleLabel = (role: string) => {
     const labels: Record<string, string> = {
       sho: 'Student Happiness Officer',
-      ssho: 'Senior SHO / PL',
-      academic: 'Academic',
-      pl: 'Program Lead',
+      ssho: 'Senior SHO',
+      academic: 'Academic Lead',
       mentor: 'Mentor',
       leadership: 'Leadership',
-      head_academics: 'Head of Academics',
-      ceo_haca: 'CEO of HACA',
-      sho_team_lead: 'SHO Team Lead'
+      admin: 'Administrator',
+      ceo_haca: 'CEO',
+      pl: 'Project Lead'
     };
     return labels[role] || role;
   };
@@ -159,13 +174,13 @@ export default function Dashboard() {
   const quickActions = [
     { label: 'Mark Attendance', icon: CalendarCheck, path: '/attendance', roles: ['sho'] },
     { label: 'Assignments', icon: ClipboardList, path: '/assignments', roles: [] },
-    { label: 'Send Notice', icon: Bell, path: '/notifications', roles: ['sho', 'ssho', 'academic', 'pl', 'leadership'] },
+    { label: 'Send Notice', icon: Bell, path: '/notifications', roles: ['sho', 'ssho', 'academic', 'leadership', 'admin', 'ceo_haca', 'pl'] },
     { label: 'Feedback', icon: MessageSquare, path: '/feedback', roles: [] },
     { label: 'Students', icon: GraduationCap, path: '/students', roles: [] },
     { label: 'Groups', icon: UserCircle, path: '/groups', roles: [] },
     { label: 'Class Planner', icon: CalendarDays, path: '/class-planner', roles: [] },
     { label: 'Analytics', icon: TrendingUp, path: '/analytics', roles: [] },
-    { label: 'Add User', icon: UserPlus, path: '/users', roles: ['leadership', 'ceo_haca', 'head_academics'] },
+    { label: 'Add User', icon: UserPlus, path: '/users', roles: ['leadership', 'admin', 'ceo_haca'] },
   ].filter(action => action.roles.length === 0 || hasRole(action.roles));
 
   if (isLoading) {
@@ -196,7 +211,7 @@ export default function Dashboard() {
       color: 'text-emerald-600 dark:text-emerald-400',
       bg: 'bg-emerald-500/10',
     },
-    ...(hasRole(['leadership', 'head_academics', 'ceo_haca', 'sho_team_lead', 'ssho', 'academic', 'pl'])
+    ...(hasRole(['leadership', 'admin', 'ssho', 'academic', 'mentor', 'ceo_haca', 'pl'])
       ? [{
         label: 'Schools',
         value: stats?.totalSchools || 0,
@@ -234,17 +249,27 @@ export default function Dashboard() {
 
     <div className="p-4 lg:p-8 max-w-[1200px] mx-auto">
       {/* Header */}
-      <div className="mb-8 animate-fade-in flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="mb-8 animate-fade-in flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:bg-blue-900/20 dark:border-blue-800/50 dark:text-blue-400 text-xs font-medium mb-4 shadow-sm">
+            <CalendarDays className="h-3.5 w-3.5" />
+            {currentTime.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}
+            <span className="mx-1 opacity-40">|</span>
+            <span className="tabular-nums font-semibold tracking-wide">{currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+          </div>
           <h1 className="text-2xl font-semibold tracking-tight">
             Welcome back, <span className="text-gradient">{user?.name?.split(' ')[0]}</span>
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {getRoleLabel(user?.role || '')} · Here's your overview for today
+            {getRoleLabel(user?.role || '')}
+            {(user as any)?.school ? (
+              <> · <span className="font-medium text-foreground/70">{(user as any).school}</span></>
+            ) : null}
+            {' '}· Welcome to your dashboard
           </p>
         </div>
 
-        {hasRole(['leadership', 'ceo_haca', 'head_academics']) && (
+        {hasRole(['leadership', 'admin', 'ceo_haca']) && (
           <Button
             onClick={handleSync}
             disabled={isSyncing}
@@ -258,6 +283,90 @@ export default function Dashboard() {
           </Button>
         )}
       </div>
+
+      {/* ── Upcoming Batches Alert (2 days before start) ── */}
+      {upcomingBatches.length > 0 && (
+        <div className="mb-6 animate-slide-up" style={{ animationDelay: '0.05s' }}>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-semibold">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              {upcomingBatches.length} Batch{upcomingBatches.length > 1 ? 'es' : ''} Starting Within 2 Days
+            </div>
+          </div>
+          <div className="space-y-3">
+            {upcomingBatches.map((batch: any) => (
+              <Card key={batch._id} className="border-amber-500/30 bg-amber-500/5 dark:bg-amber-900/10">
+                <CardContent className="p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-sm">{batch.name}</h3>
+                        <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-600">{batch.code}</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        🏫 {batch.school?.name} &nbsp;·&nbsp;
+                        📅 Starts: <strong>{new Date(batch.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</strong>
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      {batch.assignedSHO && (
+                        <span className="flex items-center gap-1">
+                          <Badge variant="secondary" className="text-[10px]">SHO</Badge>
+                          {batch.assignedSHO.name}
+                        </span>
+                      )}
+                      {batch.assignedSSHO && (
+                        <span className="flex items-center gap-1">
+                          <Badge variant="secondary" className="text-[10px]">SSHO</Badge>
+                          {batch.assignedSSHO.name}
+                        </span>
+                      )}
+                      <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border-0 text-[10px]">
+                        {batch.students?.length || 0} Students
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Students list toggle */}
+                  {batch.students?.length > 0 && (
+                    <>
+                      <button
+                        onClick={() => setExpandedBatch(expandedBatch === batch._id ? null : batch._id)}
+                        className="text-xs text-primary hover:underline flex items-center gap-1"
+                      >
+                        <ChevronRight className={`h-3 w-3 transition-transform ${expandedBatch === batch._id ? 'rotate-90' : ''}`} />
+                        {expandedBatch === batch._id ? 'Hide' : 'Show'} {batch.students.length} students
+                      </button>
+                      {expandedBatch === batch._id && (
+                        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                          {batch.students.map((st: any) => (
+                            <div key={st._id} className="flex flex-col gap-0.5 bg-background/60 rounded-md p-2 border border-border/40 text-xs">
+                              <span className="font-medium">{st.name}</span>
+                              {st.email && (
+                                <span className="flex items-center gap-1 text-muted-foreground">
+                                  <Mail className="h-3 w-3" />{st.email}
+                                </span>
+                              )}
+                              {st.mobileNumber && (
+                                <span className="flex items-center gap-1 text-muted-foreground">
+                                  <Phone className="h-3 w-3" />{st.mobileNumber}
+                                </span>
+                              )}
+                              {st.qualification && (
+                                <span className="text-muted-foreground/70">{st.qualification}</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">

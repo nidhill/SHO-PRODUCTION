@@ -20,6 +20,10 @@ const batchSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   },
+  assignedSSHO: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
   assignedMentors: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'

@@ -77,9 +77,12 @@ export default function Attendance() {
         setBatches(response.data.batches);
         if (!batchParam && response.data.batches.length > 0) {
           setSelectedBatch(response.data.batches[0]._id);
+        } else if (!batchParam && response.data.batches.length === 0) {
+          setIsLoading(false);
         }
       } catch (error) {
         toast.error('Failed to load batches');
+        setIsLoading(false);
       }
     };
     fetchBatches();

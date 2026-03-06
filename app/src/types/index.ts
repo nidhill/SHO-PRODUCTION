@@ -2,7 +2,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'sho' | 'ssho' | 'academic' | 'pl' | 'mentor' | 'leadership' | 'head_academics' | 'ceo_haca' | 'sho_team_lead';
+  role: 'sho' | 'ssho' | 'academic' | 'leadership' | 'admin' | 'mentor' | 'ceo_haca' | 'pl';
   assignedBatches?: Batch[];
   assignedSchools?: School[];
   phone?: string;
@@ -25,6 +25,7 @@ export interface Batch {
   code: string;
   school: School;
   assignedSHO?: User;
+  assignedSSHO?: User;
   assignedMentors?: User[];
   startDate: string;
   endDate?: string;
@@ -135,7 +136,7 @@ export interface Submission {
 
 export interface FeedbackItem {
   _id: string;
-  type: 'student' | 'batch' | 'session' | 'mentor' | 'general';
+  type: 'student' | 'batch' | 'session' | 'mentor' | 'general' | 'google_form';
   student?: Student;
   batch?: Batch;
   givenBy: User;
@@ -147,6 +148,7 @@ export interface FeedbackItem {
     participation?: number;
   };
   comments: string;
+  formLink?: string;
   areasOfImprovement: string[];
   strengths: string[];
   sessionDetails?: {

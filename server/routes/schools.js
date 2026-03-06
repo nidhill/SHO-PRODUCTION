@@ -11,14 +11,10 @@ router.get('/', verifyToken, async (req, res) => {
         const user = req.user;
         let filter = { isActive: true };
 
-        if (user.role === 'sho' || user.role === 'mentor') {
-            // SHO/Mentor: only their assigned schools
-            filter._id = { $in: user.assignedSchools || [] };
-        } else if (user.role === 'ssho') {
-            // SSHO: only their assigned schools
+        if (user.role !== 'admin' && user.role !== 'leadership' && user.role !== 'ceo_haca') {
             filter._id = { $in: user.assignedSchools || [] };
         }
-        // leadership/admin: no filter, sees all
+        // leadership/ceo_haca: no filter, sees all
 
         const schools = await School.find(filter);
         res.json({ success: true, schools });
@@ -33,7 +29,7 @@ router.get('/analytics', verifyToken, async (req, res) => {
         const user = req.user;
         let filter = { isActive: true };
 
-        if (user.role === 'sho' || user.role === 'mentor' || user.role === 'ssho') {
+        if (user.role !== 'admin' && user.role !== 'leadership' && user.role !== 'ceo_haca') {
             filter._id = { $in: user.assignedSchools || [] };
         }
 

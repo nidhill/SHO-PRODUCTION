@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['sho', 'ssho', 'academic', 'pl', 'mentor', 'leadership', 'head_academics', 'ceo_haca', 'sho_team_lead'],
+    enum: ['sho', 'ssho', 'academic', 'leadership', 'admin', 'mentor', 'ceo_haca', 'pl'],
     required: true
   },
   assignedBatches: [{
@@ -33,7 +33,6 @@ const userSchema = new mongoose.Schema({
   }],
   school: {
     type: String,
-    enum: ['tech_school', 'marketing_school', 'design_school', 'finance_school', ''],
     default: ''
   },
   phone: {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,10 +19,6 @@ import {
   Eye,
   EyeOff,
   ArrowRight,
-  Users,
-  Shield,
-  BookOpen,
-  Settings,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { authService } from '@/services/api';
@@ -78,28 +74,6 @@ export default function Login() {
     }
   };
 
-  const quickLogin = async (loginEmail: string) => {
-    setEmail(loginEmail);
-    setPassword('password');
-    setError('');
-    setIsLoading(true);
-    try {
-      await login(loginEmail, 'password');
-      toast.success('Login successful!');
-      navigate('/dashboard');
-    } catch {
-      setError('Login failed');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const roles = [
-    { label: 'SHO', email: 'sho@demo.com', icon: Users },
-    { label: 'SSHO', email: 'ssho@demo.com', icon: Shield },
-    { label: 'Mentor', email: 'mentor@demo.com', icon: BookOpen },
-    { label: 'Admin', email: 'leadership@demo.com', icon: Settings },
-  ];
 
   return (
     <div className="min-h-screen flex">
@@ -154,12 +128,12 @@ export default function Login() {
       </div>
 
       {/* ==================== RIGHT PANEL ==================== */}
-      <div className="flex-1 flex items-center justify-center bg-[hsl(225,28%,7%)] relative overflow-hidden">
+      <div className="flex-1 flex items-center justify-center bg-white relative overflow-hidden">
         {/* Subtle pattern */}
         <div
-          className="absolute inset-0 opacity-[0.015]"
+          className="absolute inset-0 opacity-[0.03]"
           style={{
-            backgroundImage: `radial-gradient(circle at 1px 1px, white 0.5px, transparent 0)`,
+            backgroundImage: `radial-gradient(circle at 1px 1px, black 0.5px, transparent 0)`,
             backgroundSize: '24px 24px',
           }}
         />
@@ -170,13 +144,13 @@ export default function Login() {
             <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center">
               <GraduationCap className="h-4.5 w-4.5 text-white" />
             </div>
-            <span className="text-sm font-bold text-white uppercase tracking-wider">SHO APP</span>
+            <span className="text-sm font-bold text-slate-900 uppercase tracking-wider">SHO APP</span>
           </div>
 
           {/* Header */}
           <div className="mb-8">
-            <h2 className="text-[28px] font-bold text-white tracking-tight">Welcome back</h2>
-            <p className="text-sm text-white/40 mt-1.5">
+            <h2 className="text-[28px] font-bold text-slate-900 tracking-tight">Welcome back</h2>
+            <p className="text-sm text-slate-500 mt-1.5">
               Please enter your details to sign in.
             </p>
           </div>
@@ -190,7 +164,7 @@ export default function Login() {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email */}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium text-white/70">
+              <Label htmlFor="email" className="text-sm font-medium text-slate-700">
                 Email Address
               </Label>
               <Input
@@ -201,14 +175,14 @@ export default function Login() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={isLoading}
-                className="h-12 text-sm bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/20 focus:border-blue-500/50 focus:bg-white/[0.06] transition-all duration-200"
+                className="h-12 text-sm bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white transition-all duration-200"
               />
             </div>
 
             {/* Password */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-sm font-medium text-white/70">
+                <Label htmlFor="password" className="text-sm font-medium text-slate-700">
                   Password
                 </Label>
                 <Dialog open={isForgotOpen} onOpenChange={setIsForgotOpen}>
@@ -221,16 +195,16 @@ export default function Login() {
                       Forgot password?
                     </button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-md bg-[hsl(225,28%,10%)] border-white/10 text-white">
+                  <DialogContent className="sm:max-w-md bg-white border-slate-200 text-slate-900">
                     <DialogHeader>
                       <DialogTitle>Reset Password</DialogTitle>
-                      <DialogDescription className="text-white/60">
+                      <DialogDescription className="text-slate-500">
                         Enter your email address and we'll send you a link to reset your password.
                       </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleForgotPassword} className="space-y-4 pt-4">
                       <div className="space-y-2">
-                        <Label htmlFor="forgot-email" className="text-white/80">Email address</Label>
+                        <Label htmlFor="forgot-email" className="text-slate-700">Email address</Label>
                         <Input
                           id="forgot-email"
                           type="email"
@@ -238,7 +212,7 @@ export default function Login() {
                           onChange={(e) => setForgotEmail(e.target.value)}
                           placeholder="name@institution.edu"
                           required
-                          className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus:border-blue-500/50"
+                          className="bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-blue-500"
                         />
                       </div>
                       <Button
@@ -268,11 +242,11 @@ export default function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={isLoading}
-                  className="h-12 text-sm pr-11 bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/25 focus:border-blue-500/50 focus:bg-white/[0.06] transition-all duration-200"
+                  className="h-12 text-sm pr-11 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white transition-all duration-200"
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                   onClick={() => setShowPassword(!showPassword)}
                   tabIndex={-1}
                 >
@@ -301,40 +275,15 @@ export default function Login() {
             </Button>
           </form>
 
-          {/* Quick Access */}
-          <div className="mt-10">
-            <p className="text-[11px] font-bold text-white/30 uppercase tracking-[0.15em] mb-4">
-              Quick Access Login
-            </p>
-
-            <div className="grid grid-cols-4 gap-2.5">
-              {roles.map((role) => {
-                const Icon = role.icon;
-                return (
-                  <button
-                    key={role.label}
-                    className="flex flex-col items-center gap-2 py-4 px-2 rounded-xl border border-dashed border-white/[0.12] hover:border-blue-500/40 hover:bg-white/[0.03] transition-all duration-200 group cursor-pointer"
-                    onClick={() => !isLoading && quickLogin(role.email)}
-                    disabled={isLoading}
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-white/[0.05] flex items-center justify-center group-hover:bg-blue-500/10 transition-colors duration-200">
-                      <Icon className="h-4.5 w-4.5 text-white/40 group-hover:text-blue-400 transition-colors duration-200" />
-                    </div>
-                    <span className="text-xs font-semibold text-white/50 group-hover:text-white/80 transition-colors duration-200">
-                      {role.label}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Footer */}
-          <p className="text-center mt-10 text-xs text-white/30">
+          <p className="text-center mt-10 text-xs text-slate-500">
             New to SHO App?{' '}
-            <button className="text-blue-500 hover:text-blue-400 font-semibold underline underline-offset-2 transition-colors">
+            <Link
+              to="/contact-admin"
+              className="text-blue-500 hover:text-blue-400 font-semibold underline underline-offset-2 transition-colors"
+            >
               Contact Administration.
-            </button>
+            </Link>
           </p>
         </div>
       </div>

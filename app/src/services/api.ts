@@ -55,13 +55,21 @@ export const authService = {
   resetPassword: async (token: string, password: string) => {
     const res = await api.post(`/auth/reset-password/${token}`, { password });
     return { data: res.data };
-  }
+  },
+  updateProfile: async (data: { name?: string; phone?: string }) => {
+    const res = await api.patch('/auth/profile', data);
+    return { data: res.data };
+  },
 };
 
 // ─── Sync Service ──────────────────────────────────────────
 export const syncService = {
   syncData: async () => {
     const res = await api.post('/sync');
+    return { data: res.data };
+  },
+  getUpcomingBatches: async () => {
+    const res = await api.get('/sync/upcoming');
     return { data: res.data };
   }
 };
@@ -154,6 +162,26 @@ export const batchService = {
   },
   delete: async (id: string) => {
     const res = await api.delete(`/batches/${id}`);
+    return { data: res.data };
+  },
+  transferStudents: async (id: string, targetBatchId: string, studentIds?: string[]) => {
+    const res = await api.post(`/batches/${id}/transfer`, { targetBatchId, studentIds });
+    return { data: res.data };
+  },
+  assignSHO: async (id: string, userId: string | null) => {
+    const res = await api.put(`/batches/${id}/assign-sho`, { userId });
+    return { data: res.data };
+  },
+  assignSSHO: async (id: string, userId: string | null) => {
+    const res = await api.put(`/batches/${id}/assign-ssho`, { userId });
+    return { data: res.data };
+  },
+  addMentor: async (id: string, userId: string) => {
+    const res = await api.post(`/batches/${id}/mentors`, { userId });
+    return { data: res.data };
+  },
+  removeMentor: async (id: string, userId: string) => {
+    const res = await api.delete(`/batches/${id}/mentors/${userId}`);
     return { data: res.data };
   }
 };
@@ -258,6 +286,10 @@ export const feedbackService = {
     const res = await api.get(`/feedback/${id}`);
     return { data: res.data };
   },
+  sendForm: async (data: any) => {
+    const res = await api.post('/feedback/form/send', data);
+    return { data: res.data };
+  },
   create: async (data: any) => {
     const res = await api.post('/feedback', data);
     return { data: res.data };
@@ -356,6 +388,14 @@ export const auditService = {
   }
 };
 
+// ─── System & Storage Service ────────────────────────────────
+export const systemService = {
+  getStorageStats: async () => {
+    const res = await api.get('/system/storage');
+    return { data: res.data };
+  }
+};
+
 export default {
   auth: authService,
   users: userService,
@@ -368,5 +408,6 @@ export default {
   notifications: notificationService,
   groups: groupService,
   classPlanner: classPlannerService,
-  audit: auditService
+  audit: auditService,
+  system: systemService
 };

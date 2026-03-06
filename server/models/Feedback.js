@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const feedbackSchema = new mongoose.Schema({
   type: {
     type: String,
-    enum: ['student', 'batch', 'session', 'mentor', 'general'],
+    enum: ['student', 'batch', 'session', 'mentor', 'general', 'google_form'],
     required: true
   },
   // For student-specific feedback
@@ -22,38 +22,21 @@ const feedbackSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  // Feedback ratings
+  // Feedback ratings (Optional)
   ratings: {
-    overall: {
-      type: Number,
-      min: 1,
-      max: 5
-    },
-    communication: {
-      type: Number,
-      min: 1,
-      max: 5
-    },
-    punctuality: {
-      type: Number,
-      min: 1,
-      max: 5
-    },
-    understanding: {
-      type: Number,
-      min: 1,
-      max: 5
-    },
-    participation: {
-      type: Number,
-      min: 1,
-      max: 5
-    }
+    overall: { type: Number, min: 1, max: 5 },
+    communication: { type: Number, min: 1, max: 5 },
+    punctuality: { type: Number, min: 1, max: 5 },
+    understanding: { type: Number, min: 1, max: 5 },
+    participation: { type: Number, min: 1, max: 5 }
   },
-  // Feedback comments
+  // Feedback comments or generic description
   comments: {
-    type: String,
-    required: true
+    type: String
+  },
+  // Google Form link and details
+  formLink: {
+    type: String
   },
   // Areas of improvement
   areasOfImprovement: [String],
