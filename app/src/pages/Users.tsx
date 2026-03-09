@@ -38,7 +38,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { userService, batchService } from '@/services/api';
+import { userService, batchService, schoolService } from '@/services/api';
 import { Loader2, Plus, Search, User as UserIcon, Mail, Phone, Lock, Trash2, GraduationCap } from 'lucide-react';
 import { toast } from 'sonner';
 import type { User } from '@/types';
@@ -53,6 +53,7 @@ export default function Users() {
     const [userToDelete, setUserToDelete] = useState<string | null>(null);
     const [batches, setBatches] = useState<any[]>([]);
     const [batchSearch, setBatchSearch] = useState('');
+    const [schools, setSchools] = useState<{ _id: string; name: string }[]>([]);
 
     // New user form state
     const [newUser, setNewUser] = useState({
@@ -68,7 +69,17 @@ export default function Users() {
     useEffect(() => {
         fetchUsers();
         fetchBatches();
+        fetchSchools();
     }, []);
+
+    const fetchSchools = async () => {
+        try {
+            const res = await schoolService.getAll();
+            setSchools(res.data.schools || []);
+        } catch {
+            // non-critical
+        }
+    };
 
     const fetchUsers = async () => {
         try {
@@ -247,10 +258,9 @@ export default function Users() {
                                                 <SelectValue placeholder="Select school" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="tech_school">Tech School</SelectItem>
-                                                <SelectItem value="marketing_school">Marketing School</SelectItem>
-                                                <SelectItem value="design_school">Design School</SelectItem>
-                                                <SelectItem value="finance_school">Finance School</SelectItem>
+                                                {schools.map(s => (
+                                                    <SelectItem key={s._id} value={s.name}>{s.name}</SelectItem>
+                                                ))}
                                             </SelectContent>
                                         </Select>
                                     </div>

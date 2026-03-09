@@ -10,8 +10,7 @@ router.get('/', verifyToken, async (req, res) => {
         const user = req.user;
         let filter = { isActive: true };
 
-        // Admin/leadership/ceo see everybody; school-level roles see all users
-        // (needed so School Management page can pick SHOs/SSHOs/Mentors)
+        // All authenticated roles can list users (needed for batch assignment UIs)
         const users = await User.find(filter).select('-password');
         res.json({
             success: true,
@@ -34,16 +33,29 @@ router.get('/', verifyToken, async (req, res) => {
 // POST /api/users
 router.post('/', verifyToken, async (req, res) => {
     try {
-        const { name, email, password, role, phone, assignedBatches, school } = req.body;
+        const callerRole = req.user.role;
+        const { name, email, password, role, phone, assignedBatches, school, subject } = req.body;
+
+        // ssho / academic / pl can only create mentor users
+        const managerRoles = ['ssho', 'academic', 'pl'];
+        if (managerRoles.includes(callerRole)) {
+            if (role !== 'mentor') {
+                return res.status(403).json({ success: false, message: 'You can only create Mentor users.' });
+            }
+        }
+
         const existing = await User.findOne({ email });
         if (existing) {
             return res.status(400).json({ success: false, message: 'Email already exists' });
         }
 
         const userData = { name, email, password: password || 'password', role, phone };
+        if (subject) userData.subject = subject;
 
-        // Handle specific role assignments
-        if (school && (role === 'ssho' || role === 'sho')) userData.school = school;
+        // Assign school: use provided school or fall back to caller's school for managers
+        const resolvedSchool = school || (managerRoles.includes(callerRole) ? req.user.school : '');
+        if (resolvedSchool && (role === 'ssho' || role === 'sho' || role === 'mentor')) userData.school = resolvedSchool;
+
         if (assignedBatches && assignedBatches.length > 0) userData.assignedBatches = assignedBatches;
 
         const user = await User.create(userData);

@@ -38,6 +38,10 @@ const userSchema = new mongoose.Schema({
   phone: {
     type: String
   },
+  subject: {
+    type: String,
+    default: ''
+  },
   isActive: {
     type: Boolean,
     default: true

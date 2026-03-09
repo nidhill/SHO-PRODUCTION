@@ -26,7 +26,12 @@ async function buildBatchFilter(user, baseFilter = { isActive: true }) {
         return { ...baseFilter, _id: { $in: [] } }; // nothing
     }
 
-    // SHO / mentor → ONLY batches where they are the assignedSHO
+    // Mentor → batches where they are in assignedMentors
+    if (user.role === 'mentor') {
+        return { ...baseFilter, assignedMentors: user._id };
+    }
+
+    // SHO → batches where they are the assignedSHO
     return { ...baseFilter, assignedSHO: user._id };
 }
 
@@ -48,7 +53,14 @@ async function buildStudentFilter(user, baseFilter = { isActive: true }) {
         return { ...baseFilter, _id: { $in: [] } };
     }
 
-    // SHO / mentor → students in their assigned batches
+    // Mentor → students in their assigned mentor batches
+    if (user.role === 'mentor') {
+        const myBatches = await Batch.find({ assignedMentors: user._id, isActive: true }, '_id');
+        const batchIds = myBatches.map(b => b._id);
+        return { ...baseFilter, batch: { $in: batchIds } };
+    }
+
+    // SHO → students in their assigned batches
     const myBatches = await Batch.find({ assignedSHO: user._id, isActive: true }, '_id');
     const batchIds = myBatches.map(b => b._id);
     return { ...baseFilter, batch: { $in: batchIds } };

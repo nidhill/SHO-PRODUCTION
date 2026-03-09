@@ -50,8 +50,13 @@ import {
   Pencil,
   Trash2,
   ArrowRightLeft,
+  UserCog,
+  Check,
+  X,
+  UserPlus,
+  UserMinus,
 } from 'lucide-react';
-import { batchService } from '@/services/api';
+import { batchService, userService } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Batch } from '@/types';
 import { toast } from 'sonner';
@@ -59,8 +64,9 @@ import { toast } from 'sonner';
 const MANAGER_ROLES = ['ssho', 'academic', 'pl', 'ceo_haca', 'admin', 'leadership'];
 
 export default function Batches() {
-  const { hasRole } = useAuth();
+  const { hasRole, user: currentUser } = useAuth();
   const canManage = hasRole(MANAGER_ROLES);
+  const canCreateMentor = hasRole(['ssho', 'academic', 'pl', 'leadership', 'admin', 'ceo_haca']);
 
   const [batches, setBatches] = useState<Batch[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -80,6 +86,25 @@ export default function Batches() {
   const [transferBatch, setTransferBatch] = useState<Batch | null>(null);
   const [targetBatchId, setTargetBatchId] = useState('');
   const [isTransferring, setIsTransferring] = useState(false);
+
+  // Change SHO state
+  const [changeSHOBatch, setChangeSHOBatch] = useState<Batch | null>(null);
+  const [shoUsers, setShoUsers] = useState<{ _id: string; name: string; email: string }[]>([]);
+  const [selectedSHOId, setSelectedSHOId] = useState('');
+  const [isChangingSHO, setIsChangingSHO] = useState(false);
+  const [isLoadingSHOUsers, setIsLoadingSHOUsers] = useState(false);
+
+  // Manage Mentors state
+  const [mentorBatch, setMentorBatch] = useState<Batch | null>(null);
+  const [availableMentors, setAvailableMentors] = useState<{ _id: string; name: string; email: string; school: string }[]>([]);
+  const [isLoadingMentors, setIsLoadingMentors] = useState(false);
+  const [removingMentorId, setRemovingMentorId] = useState<string | null>(null);
+  const [addingMentorId, setAddingMentorId] = useState<string | null>(null);
+
+  // Create new mentor inline form
+  const [showCreateMentor, setShowCreateMentor] = useState(false);
+  const [newMentor, setNewMentor] = useState({ name: '', email: '', phone: '', subject: '' });
+  const [isCreatingMentor, setIsCreatingMentor] = useState(false);
 
   useEffect(() => {
     fetchBatches();
@@ -153,6 +178,136 @@ export default function Batches() {
       toast.error('Failed to delete batch');
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  // ── Change SHO Handlers ───────────────────────────────
+  const openChangeSHO = async (batch: Batch) => {
+    setChangeSHOBatch(batch);
+    setSelectedSHOId(batch.assignedSHO?._id || '');
+    setIsLoadingSHOUsers(true);
+    try {
+      const res = await userService.getAll();
+      const allUsers: any[] = res.data.users || [];
+      // Filter SHO role and same school name
+      const schoolName = batch.school?.name || '';
+      const filtered = allUsers.filter(
+        u => u.role === 'sho' && u.school === schoolName
+      );
+      setShoUsers(filtered);
+    } catch {
+      toast.error('Failed to load SHO users');
+    } finally {
+      setIsLoadingSHOUsers(false);
+    }
+  };
+
+  const handleChangeSHO = async () => {
+    if (!changeSHOBatch) return;
+    setIsChangingSHO(true);
+    try {
+      await batchService.assignSHO(changeSHOBatch._id, selectedSHOId === 'none' || !selectedSHOId ? null : selectedSHOId);
+      toast.success('SHO updated successfully');
+      setChangeSHOBatch(null);
+      fetchBatches();
+    } catch {
+      toast.error('Failed to update SHO');
+    } finally {
+      setIsChangingSHO(false);
+    }
+  };
+
+  // ── Manage Mentors Handlers ───────────────────────────
+  const openManageMentors = async (batch: Batch) => {
+    setMentorBatch(batch);
+    setIsLoadingMentors(true);
+    try {
+      const res = await userService.getAll();
+      const allUsers: any[] = res.data.users || [];
+      const schoolName = batch.school?.name || '';
+      const mentors = allUsers.filter(u => u.role === 'mentor' && u.school === schoolName);
+      setAvailableMentors(mentors);
+    } catch {
+      toast.error('Failed to load mentors');
+    } finally {
+      setIsLoadingMentors(false);
+    }
+  };
+
+  const handleAddMentor = async (userId: string) => {
+    if (!mentorBatch) return;
+    setAddingMentorId(userId);
+    try {
+      await batchService.addMentor(mentorBatch._id, userId);
+      toast.success('Mentor added');
+      // Optimistically update local mentorBatch
+      const user = availableMentors.find(u => u._id === userId);
+      if (user) {
+        setMentorBatch(prev => prev ? {
+          ...prev,
+          assignedMentors: [...(prev.assignedMentors || []), user as any]
+        } : prev);
+      }
+      fetchBatches();
+    } catch {
+      toast.error('Failed to add mentor');
+    } finally {
+      setAddingMentorId(null);
+    }
+  };
+
+  const handleRemoveMentor = async (userId: string) => {
+    if (!mentorBatch) return;
+    setRemovingMentorId(userId);
+    try {
+      await batchService.removeMentor(mentorBatch._id, userId);
+      toast.success('Mentor removed');
+      setMentorBatch(prev => prev ? {
+        ...prev,
+        assignedMentors: (prev.assignedMentors || []).filter((m: any) => m._id !== userId)
+      } : prev);
+      fetchBatches();
+    } catch {
+      toast.error('Failed to remove mentor');
+    } finally {
+      setRemovingMentorId(null);
+    }
+  };
+
+  const handleCreateMentor = async () => {
+    if (!mentorBatch || !newMentor.name || !newMentor.email) return;
+    setIsCreatingMentor(true);
+    try {
+      const schoolName = mentorBatch.school?.name || (currentUser as any)?.school || '';
+      const res = await userService.create({
+        name: newMentor.name,
+        email: newMentor.email,
+        phone: newMentor.phone,
+        subject: newMentor.subject,
+        role: 'mentor',
+        school: schoolName,
+        password: 'password',
+      });
+      const createdUser = res.data.user;
+      // Assign to batch immediately
+      await batchService.addMentor(mentorBatch._id, createdUser.id || createdUser._id);
+      toast.success(`Mentor "${newMentor.name}" created and assigned`);
+      setNewMentor({ name: '', email: '', phone: '', subject: '' });
+      setShowCreateMentor(false);
+      // Refresh available mentors list & batch
+      const usersRes = await userService.getAll();
+      const allUsers: any[] = usersRes.data.users || [];
+      const schoolMentors = allUsers.filter(u => u.role === 'mentor' && u.school === schoolName);
+      setAvailableMentors(schoolMentors);
+      setMentorBatch(prev => prev ? {
+        ...prev,
+        assignedMentors: [...(prev.assignedMentors || []), { _id: createdUser.id || createdUser._id, name: createdUser.name, email: createdUser.email } as any]
+      } : prev);
+      fetchBatches();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to create mentor');
+    } finally {
+      setIsCreatingMentor(false);
     }
   };
 
@@ -282,6 +437,14 @@ export default function Batches() {
                           <Pencil className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
                           Edit Batch
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openChangeSHO(batch)}>
+                          <UserCog className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                          Change SHO
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openManageMentors(batch)}>
+                          <UserPlus className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                          Manage Mentors
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => { setTransferBatch(batch); setTargetBatchId(''); }}
                         >
@@ -318,6 +481,12 @@ export default function Batches() {
                   <span className="flex items-center gap-1.5">
                     <Users className="h-3 w-3" />
                     SSHO: <span className="font-medium text-foreground/80">{(batch as any).assignedSSHO.name}</span>
+                  </span>
+                )}
+                {batch.assignedMentors && batch.assignedMentors.length > 0 && (
+                  <span className="flex items-center gap-1.5">
+                    <UserPlus className="h-3 w-3" />
+                    Mentors: <span className="font-medium text-foreground/80">{batch.assignedMentors.map((m: any) => m.name).join(', ')}</span>
                   </span>
                 )}
               </div>
@@ -443,6 +612,299 @@ export default function Batches() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ── Change SHO Dialog ───────────────────────────── */}
+      <Dialog open={!!changeSHOBatch} onOpenChange={() => setChangeSHOBatch(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <UserCog className="h-4 w-4 text-primary" /> Change SHO
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {/* Batch info card */}
+            <div className="flex items-center gap-3 rounded-lg bg-muted/50 border border-border/50 p-3">
+              <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-xs font-bold text-blue-600 dark:text-blue-400 shrink-0">
+                {changeSHOBatch?.code?.slice(0, 2) || 'B'}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold truncate">{changeSHOBatch?.name}</p>
+                <p className="text-[11px] text-muted-foreground truncate flex items-center gap-1">
+                  <School className="h-2.5 w-2.5" /> {changeSHOBatch?.school?.name}
+                </p>
+              </div>
+            </div>
+
+            {/* SHO picker */}
+            <div>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                SHOs in {changeSHOBatch?.school?.name}
+              </p>
+              {isLoadingSHOUsers ? (
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground py-6">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+                </div>
+              ) : (
+                <div className="space-y-1.5 max-h-60 overflow-y-auto pr-0.5">
+                  {/* Remove SHO option */}
+                  <button
+                    onClick={() => setSelectedSHOId('none')}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg border text-left transition-all ${
+                      selectedSHOId === 'none' || !selectedSHOId
+                        ? 'border-destructive/40 bg-destructive/5 ring-1 ring-destructive/20'
+                        : 'border-border/50 hover:border-border hover:bg-muted/40'
+                    }`}
+                  >
+                    <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center shrink-0">
+                      <X className="h-3.5 w-3.5 text-muted-foreground" />
+                    </div>
+                    <span className="text-sm text-muted-foreground">Remove SHO</span>
+                  </button>
+
+                  {shoUsers.map(u => {
+                    const initials = u.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
+                    const isSelected = selectedSHOId === u._id;
+                    const isCurrent = changeSHOBatch?.assignedSHO?._id === u._id || (changeSHOBatch?.assignedSHO as any)?._id === u._id;
+                    return (
+                      <button
+                        key={u._id}
+                        onClick={() => setSelectedSHOId(u._id)}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg border text-left transition-all ${
+                          isSelected
+                            ? 'border-primary/50 bg-primary/5 ring-1 ring-primary/20'
+                            : 'border-border/50 hover:border-border hover:bg-muted/40'
+                        }`}
+                      >
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0 ${
+                          isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground/70'
+                        }`}>
+                          {initials}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-sm font-medium truncate">{u.name}</p>
+                            {isCurrent && (
+                              <span className="text-[9px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-full shrink-0">current</span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-muted-foreground truncate">{u.email}</p>
+                        </div>
+                        {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                      </button>
+                    );
+                  })}
+
+                  {shoUsers.length === 0 && (
+                    <div className="text-center py-6">
+                      <Users className="h-6 w-6 text-muted-foreground mx-auto mb-1.5" />
+                      <p className="text-xs text-muted-foreground">No SHOs found for this school</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="mt-1">
+            <Button variant="outline" size="sm" onClick={() => setChangeSHOBatch(null)}>Cancel</Button>
+            <Button size="sm" onClick={handleChangeSHO} disabled={isChangingSHO || isLoadingSHOUsers}>
+              {isChangingSHO
+                ? <><Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />Saving…</>
+                : <><UserCog className="h-3.5 w-3.5 mr-2" />Update SHO</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Manage Mentors Dialog ───────────────────────── */}
+      <Dialog open={!!mentorBatch} onOpenChange={() => setMentorBatch(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <UserPlus className="h-4 w-4 text-primary" /> Manage Mentors
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Batch info */}
+            <div className="flex items-center gap-3 rounded-lg bg-muted/50 border border-border/50 p-3">
+              <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-xs font-bold text-blue-600 dark:text-blue-400 shrink-0">
+                {mentorBatch?.code?.slice(0, 2) || 'B'}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold truncate">{mentorBatch?.name}</p>
+                <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                  <School className="h-2.5 w-2.5" /> {mentorBatch?.school?.name}
+                </p>
+              </div>
+            </div>
+
+            {/* Current mentors */}
+            <div>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                Assigned Mentors ({mentorBatch?.assignedMentors?.length || 0})
+              </p>
+              {mentorBatch?.assignedMentors && mentorBatch.assignedMentors.length > 0 ? (
+                <div className="space-y-1.5">
+                  {mentorBatch.assignedMentors.map((m: any) => {
+                    const initials = m.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
+                    return (
+                      <div key={m._id} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+                        <div className="w-7 h-7 rounded-full bg-emerald-500/15 flex items-center justify-center text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 shrink-0">
+                          {initials}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{m.name}</p>
+                          <p className="text-[11px] text-muted-foreground truncate">{m.email}</p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
+                          onClick={() => handleRemoveMentor(m._id)}
+                          disabled={removingMentorId === m._id}
+                        >
+                          {removingMentorId === m._id
+                            ? <Loader2 className="h-3 w-3 animate-spin" />
+                            : <UserMinus className="h-3 w-3" />}
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground py-2">No mentors assigned yet</p>
+              )}
+            </div>
+
+            {/* Available mentors to add */}
+            <div>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                Add from {mentorBatch?.school?.name}
+              </p>
+              {isLoadingMentors ? (
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground py-4">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+                </div>
+              ) : (() => {
+                const assignedIds = new Set((mentorBatch?.assignedMentors || []).map((m: any) => m._id));
+                const unassigned = availableMentors.filter(u => !assignedIds.has(u._id));
+                return unassigned.length > 0 ? (
+                  <div className="space-y-1.5 max-h-44 overflow-y-auto pr-0.5">
+                    {unassigned.map(u => {
+                      const initials = u.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
+                      return (
+                        <div key={u._id} className="flex items-center gap-3 px-3 py-2 rounded-lg border border-border/50 hover:bg-muted/40 transition-colors">
+                          <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-[11px] font-semibold text-foreground/70 shrink-0">
+                            {initials}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{u.name}</p>
+                            <p className="text-[11px] text-muted-foreground truncate">{u.email}</p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-primary hover:text-primary hover:bg-primary/10 shrink-0"
+                            onClick={() => handleAddMentor(u._id)}
+                            disabled={addingMentorId === u._id}
+                          >
+                            {addingMentorId === u._id
+                              ? <Loader2 className="h-3 w-3 animate-spin" />
+                              : <UserPlus className="h-3 w-3" />}
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <Users className="h-5 w-5 text-muted-foreground mx-auto mb-1" />
+                    <p className="text-xs text-muted-foreground">
+                      {availableMentors.length === 0 ? 'No mentors found for this school' : 'All mentors already assigned'}
+                    </p>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Create new mentor form */}
+            {canCreateMentor && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+                    Create New Mentor
+                  </p>
+                  <button
+                    onClick={() => { setShowCreateMentor(v => !v); setNewMentor({ name: '', email: '', phone: '' }); }}
+                    className="text-[11px] text-primary hover:underline flex items-center gap-1"
+                  >
+                    {showCreateMentor ? <><X className="h-3 w-3" /> Cancel</> : <><UserPlus className="h-3 w-3" /> Add New</>}
+                  </button>
+                </div>
+
+                {showCreateMentor && (
+                  <div className="space-y-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                    <div>
+                      <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Full Name *</label>
+                      <Input
+                        placeholder="Mentor name"
+                        value={newMentor.name}
+                        onChange={e => setNewMentor(m => ({ ...m, name: e.target.value }))}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Email *</label>
+                      <Input
+                        type="email"
+                        placeholder="mentor@example.com"
+                        value={newMentor.email}
+                        onChange={e => setNewMentor(m => ({ ...m, email: e.target.value }))}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Phone</label>
+                      <Input
+                        placeholder="9876543210"
+                        value={newMentor.phone}
+                        onChange={e => setNewMentor(m => ({ ...m, phone: e.target.value }))}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Subject</label>
+                      <Input
+                        placeholder="e.g. Mathematics, English…"
+                        value={newMentor.subject}
+                        onChange={e => setNewMentor(m => ({ ...m, subject: e.target.value }))}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">
+                      Default password: <span className="font-mono font-semibold text-foreground/70">password</span> · School: <span className="font-medium text-foreground/70">{mentorBatch?.school?.name}</span>
+                    </p>
+                    <Button
+                      size="sm"
+                      className="w-full h-8 text-xs"
+                      onClick={handleCreateMentor}
+                      disabled={isCreatingMentor || !newMentor.name || !newMentor.email}
+                    >
+                      {isCreatingMentor
+                        ? <><Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />Creating…</>
+                        : <><UserPlus className="h-3.5 w-3.5 mr-2" />Create & Assign to Batch</>}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="mt-1">
+            <Button size="sm" variant="outline" onClick={() => { setMentorBatch(null); setShowCreateMentor(false); setNewMentor({ name: '', email: '', phone: '', subject: '' }); }}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Transfer Dialog ─────────────────────────────── */}
       <Dialog open={!!transferBatch} onOpenChange={() => { setTransferBatch(null); setTargetBatchId(''); }}>
