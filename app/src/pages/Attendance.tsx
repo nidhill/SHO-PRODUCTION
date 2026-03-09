@@ -367,51 +367,29 @@ export default function Attendance() {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Present</p>
-                <p className="text-2xl font-bold text-green-600">{stats.present}</p>
-              </div>
-              <CheckCircle className="h-8 w-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Absent</p>
-                <p className="text-2xl font-bold text-red-600">{stats.absent}</p>
-              </div>
-              <XCircle className="h-8 w-8 text-red-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Late</p>
-                <p className="text-2xl font-bold text-yellow-600">{stats.late}</p>
-              </div>
-              <Clock className="h-8 w-8 text-yellow-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Excused</p>
-                <p className="text-2xl font-bold text-blue-600">{stats.excused}</p>
-              </div>
-              <AlertCircle className="h-8 w-8 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        {[
+          { label: 'Present', value: stats.present, icon: CheckCircle, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500/10', subtitle: `${students.length > 0 ? ((stats.present / students.length) * 100).toFixed(0) : 0}% of total` },
+          { label: 'Absent', value: stats.absent, icon: XCircle, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-500/10', subtitle: `${students.length > 0 ? ((stats.absent / students.length) * 100).toFixed(0) : 0}% of total` },
+          { label: 'Late', value: stats.late, icon: Clock, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10', subtitle: `${students.length > 0 ? ((stats.late / students.length) * 100).toFixed(0) : 0}% of total` },
+          { label: 'Excused', value: stats.excused, icon: AlertCircle, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500/10', subtitle: `${students.length > 0 ? ((stats.excused / students.length) * 100).toFixed(0) : 0}% of total` },
+        ].map((stat, i) => {
+          const Icon = stat.icon;
+          return (
+            <Card key={stat.label} className="border-border/60 animate-slide-up" style={{ animationDelay: `${i * 0.05}s` }}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{stat.label}</span>
+                  <div className={`w-8 h-8 rounded-lg ${stat.bg} flex items-center justify-center`}>
+                    <Icon className={`h-4 w-4 ${stat.color}`} />
+                  </div>
+                </div>
+                <p className="text-2xl font-bold tracking-tight">{stat.value}</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">{stat.subtitle}</p>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Attendance Table */}
@@ -514,12 +492,12 @@ export default function Attendance() {
       </Card>
 
       {students.length === 0 && (
-        <div className="text-center py-12">
-          <CalendarCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium">No students found</h3>
-          <p className="text-muted-foreground">
-            Select a batch to view students
-          </p>
+        <div className="rounded-xl border border-dashed border-border p-12 text-center mt-4">
+          <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mx-auto mb-3">
+            <CalendarCheck className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <h3 className="text-sm font-medium mb-1">No students found</h3>
+          <p className="text-xs text-muted-foreground">Select a batch to view students and mark attendance</p>
         </div>
       )}
 

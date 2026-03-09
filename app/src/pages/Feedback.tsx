@@ -337,105 +337,122 @@ export default function Feedback() {
         </Select>
       </div>
 
+      {/* Stats row */}
+      <div className="flex items-center gap-3 mb-5 flex-wrap">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted text-xs font-medium text-muted-foreground border border-border/50">
+          <MessageSquare className="h-3 w-3" /> {feedback.length} Total
+        </span>
+        {feedback.filter(f => f.type === 'student').length > 0 && (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30 text-xs font-medium">
+            <User className="h-3 w-3" /> {feedback.filter(f => f.type === 'student').length} Student
+          </span>
+        )}
+        {feedback.filter(f => f.type === 'batch').length > 0 && (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-medium">
+            <Users className="h-3 w-3" /> {feedback.filter(f => f.type === 'batch').length} Batch
+          </span>
+        )}
+        {feedback.filter(f => f.type === 'google_form').length > 0 && (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/30 text-xs font-medium">
+            <MessageSquare className="h-3 w-3" /> {feedback.filter(f => f.type === 'google_form').length} Forms
+          </span>
+        )}
+      </div>
+
       {/* Feedback List */}
-      <div className="space-y-4">
-        {filteredFeedback.map((item) => (
-          <Card key={item._id}>
-            <CardContent className="p-6">
-              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    {getTypeBadge(item.type)}
-                    {item.student && (
-                      <div className="flex items-center gap-1 text-sm">
-                        <User className="h-4 w-4" />
-                        <span>{item.student.name}</span>
-                      </div>
-                    )}
-                    {item.batch && (
-                      <div className="flex items-center gap-1 text-sm">
-                        <Users className="h-4 w-4" />
-                        <span>{item.batch.name}</span>
-                      </div>
-                    )}
-                  </div>
-                  {item.type === 'google_form' ? (
-                    <div className="mb-3">
-                      <p className="text-muted-foreground mb-2">{item.comments}</p>
-                      {item.formLink && (
-                        <div className="bg-muted p-3 flex items-center gap-2 rounded-md">
-                          <MessageSquare className="h-4 w-4 text-primary" />
-                          <a href={item.formLink} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:underline break-all">
-                            {item.formLink}
-                          </a>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-1 text-sm mt-4">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        <span>Dispatched By: {item.givenBy?.name}</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <p className="text-muted-foreground mb-3">{item.comments}</p>
-                      <div className="flex items-center gap-4 text-sm">
-                        <div className="flex items-center gap-1">
-                          <Star className="h-4 w-4 text-yellow-500" />
-                          <span>Overall: {item.ratings?.overall}/5</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          <span>By: {item.givenBy?.name}</span>
-                        </div>
-                      </div>
-                      {item.areasOfImprovement?.length > 0 && (
-                        <div className="mt-3">
-                          <p className="text-sm text-muted-foreground mb-1">Areas of Improvement:</p>
-                          <div className="flex flex-wrap gap-2">
-                            {item.areasOfImprovement.map((area, idx) => (
-                              <Badge key={idx} variant="outline">{area}</Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {item.strengths?.length > 0 && (
-                        <div className="mt-2">
-                          <p className="text-sm text-muted-foreground mb-1">Strengths:</p>
-                          <div className="flex flex-wrap gap-2">
-                            {item.strengths.map((strength, idx) => (
-                              <Badge key={idx} variant="secondary">{strength}</Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
+      <div className="space-y-3">
+        {filteredFeedback.map((item, idx) => (
+          <Card key={item._id} className="border-l-4 border-l-violet-500/60 animate-slide-up" style={{ animationDelay: `${idx * 40}ms` }}>
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <MessageSquare className="h-4 w-4 text-violet-600 dark:text-violet-400" />
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => {
-                      setSelectedFeedback(item);
-                      setIsViewDialogOpen(true);
-                    }}>View Details</DropdownMenuItem>
-                    {item.type !== 'google_form' && (
-                      <DropdownMenuItem onClick={() => {
-                        setSelectedFeedback(item);
-                        setEditFeedback({
-                          ratings: item.ratings || { overall: 5, communication: 5, punctuality: 5, understanding: 5, participation: 5 },
-                          comments: item.comments || '',
-                          areasOfImprovement: item.areasOfImprovement?.join(', ') || '',
-                          strengths: item.strengths?.join(', ') || ''
-                        });
-                        setIsEditDialogOpen(true);
-                      }}>Edit Feedback</DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        {getTypeBadge(item.type)}
+                        {item.student && (
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <User className="h-3 w-3" /> {item.student.name}
+                          </span>
+                        )}
+                        {item.batch && (
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Users className="h-3 w-3" /> {item.batch.name}
+                          </span>
+                        )}
+                        {item.type !== 'google_form' && item.ratings?.overall && (
+                          <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                            <Star className="h-3 w-3 fill-current" /> {item.ratings.overall}/5
+                          </span>
+                        )}
+                      </div>
+
+                      {item.type === 'google_form' ? (
+                        <div>
+                          {item.comments && <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{item.comments}</p>}
+                          {item.formLink && (
+                            <div className="bg-muted/60 px-3 py-2 flex items-center gap-2 rounded-lg mb-2">
+                              <MessageSquare className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                              <a href={item.formLink} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline truncate">
+                                {item.formLink}
+                              </a>
+                            </div>
+                          )}
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <User className="h-3 w-3" /> By: {item.givenBy?.name}
+                          </p>
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{item.comments}</p>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1 mb-2">
+                            <User className="h-3 w-3" /> By: {item.givenBy?.name}
+                          </p>
+                          {item.strengths?.length > 0 && (
+                            <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Strengths:</span>
+                              {item.strengths.map((s, i) => <Badge key={i} variant="secondary" className="text-[10px]">{s}</Badge>)}
+                            </div>
+                          )}
+                          {item.areasOfImprovement?.length > 0 && (
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Improve:</span>
+                              {item.areasOfImprovement.map((a, i) => <Badge key={i} variant="outline" className="text-[10px]">{a}</Badge>)}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => {
+                          setSelectedFeedback(item);
+                          setIsViewDialogOpen(true);
+                        }}>View Details</DropdownMenuItem>
+                        {item.type !== 'google_form' && (
+                          <DropdownMenuItem onClick={() => {
+                            setSelectedFeedback(item);
+                            setEditFeedback({
+                              ratings: item.ratings || { overall: 5, communication: 5, punctuality: 5, understanding: 5, participation: 5 },
+                              comments: item.comments || '',
+                              areasOfImprovement: item.areasOfImprovement?.join(', ') || '',
+                              strengths: item.strengths?.join(', ') || ''
+                            });
+                            setIsEditDialogOpen(true);
+                          }}>Edit Feedback</DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -443,12 +460,12 @@ export default function Feedback() {
       </div>
 
       {filteredFeedback.length === 0 && (
-        <div className="text-center py-12">
-          <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium">No feedback found</h3>
-          <p className="text-muted-foreground">
-            Add your first feedback to get started
-          </p>
+        <div className="rounded-xl border border-dashed border-border p-12 text-center">
+          <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mx-auto mb-3">
+            <MessageSquare className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <h3 className="text-sm font-medium mb-1">No feedback found</h3>
+          <p className="text-xs text-muted-foreground">Add your first feedback to get started</p>
         </div>
       )}
 

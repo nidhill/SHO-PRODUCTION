@@ -8,12 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import {
-    User, Shield, Moon, Sun, Loader2, Phone, Mail, Pencil,
-    Calendar, Clock, GraduationCap, Bell, BellOff, Activity,
-    CheckCircle2, AlertCircle, School, Users, BookOpen,
+    Shield, Moon, Sun, Loader2, Phone, Mail, Pencil,
+    Clock, GraduationCap, Bell, Activity,
+    CheckCircle2, AlertCircle, Users, BookOpen,
 } from 'lucide-react';
 import { authService, batchService, studentService } from '@/services/api';
 import type { Batch, Student } from '@/types';
@@ -70,7 +69,7 @@ function NotifToggle({ label, desc, storageKey }: { label: string; desc: string;
 
 // ─── Main Component ────────────────────────────────────
 export default function Settings() {
-    const { user, login } = useAuth();
+    const { user } = useAuth();
     const { theme, toggleTheme } = useTheme();
 
     // ── Edit Profile state

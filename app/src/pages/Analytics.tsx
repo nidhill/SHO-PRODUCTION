@@ -56,10 +56,10 @@ export default function Analytics() {
 
     const total = students.totalStudents || 1;
     return [
-      { label: 'Active', value: students.activeStudents, color: 'bg-green-500', percentage: (students.activeStudents / total) * 100 },
-      { label: 'Placed', value: students.placedStudents, color: 'bg-blue-500', percentage: (students.placedStudents / total) * 100 },
-      { label: 'Interview Required', value: students.interviewRequired, color: 'bg-yellow-500', percentage: (students.interviewRequired / total) * 100 },
-      { label: 'Revoked', value: students.revokedStudents, color: 'bg-red-500', percentage: (students.revokedStudents / total) * 100 },
+      { label: 'Active', value: students.activeStudents, color: 'bg-green-500', borderColor: 'border-l-green-500', bgColor: 'bg-green-500/10', textColor: 'text-green-600 dark:text-green-400', percentage: (students.activeStudents / total) * 100 },
+      { label: 'Placed', value: students.placedStudents, color: 'bg-blue-500', borderColor: 'border-l-blue-500', bgColor: 'bg-blue-500/10', textColor: 'text-blue-600 dark:text-blue-400', percentage: (students.placedStudents / total) * 100 },
+      { label: 'Interview Required', value: students.interviewRequired, color: 'bg-yellow-500', borderColor: 'border-l-yellow-500', bgColor: 'bg-yellow-500/10', textColor: 'text-yellow-600 dark:text-yellow-400', percentage: (students.interviewRequired / total) * 100 },
+      { label: 'Revoked', value: students.revokedStudents, color: 'bg-red-500', borderColor: 'border-l-red-500', bgColor: 'bg-red-500/10', textColor: 'text-red-600 dark:text-red-400', percentage: (students.revokedStudents / total) * 100 },
     ];
   };
 
@@ -72,9 +72,6 @@ export default function Analytics() {
   }
 
   return (
-
-
-
     <div className="p-4 lg:p-8">
       {/* Header */}
       <div className="mb-8">
@@ -86,48 +83,55 @@ export default function Analytics() {
 
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Schools</p>
-                <p className="text-3xl font-bold">{analytics.schools?.totalSchools || 0}</p>
+        <Card className="animate-slide-up border-border/60" style={{ animationDelay: '0ms' }}>
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Total Schools</span>
+              <div className="w-9 h-9 rounded-xl bg-violet-500/10 flex items-center justify-center">
+                <School className="h-4 w-4 text-violet-600 dark:text-violet-400" />
               </div>
-              <School className="h-8 w-8 text-primary" />
             </div>
+            <p className="text-3xl font-bold tracking-tight">{analytics.schools?.totalSchools || 0}</p>
+            <p className="text-xs text-muted-foreground mt-1">Partner institutions</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Batches</p>
-                <p className="text-3xl font-bold">{analytics.batches?.totalBatches || 0}</p>
+
+        <Card className="animate-slide-up border-border/60" style={{ animationDelay: '60ms' }}>
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Total Batches</span>
+              <div className="w-9 h-9 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                <GraduationCap className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               </div>
-              <GraduationCap className="h-8 w-8 text-primary" />
             </div>
+            <p className="text-3xl font-bold tracking-tight">{analytics.batches?.totalBatches || 0}</p>
+            <p className="text-xs text-muted-foreground mt-1">Active batches</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Students</p>
-                <p className="text-3xl font-bold">{analytics.students?.totalStudents || 0}</p>
+
+        <Card className="animate-slide-up border-border/60" style={{ animationDelay: '120ms' }}>
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Total Students</span>
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                <Users className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               </div>
-              <Users className="h-8 w-8 text-primary" />
             </div>
+            <p className="text-3xl font-bold tracking-tight">{analytics.students?.totalStudents || 0}</p>
+            <p className="text-xs text-muted-foreground mt-1">Enrolled learners</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Avg Attendance</p>
-                <p className="text-3xl font-bold">{analytics.batches?.averageAttendance?.toFixed(1) || 0}%</p>
+
+        <Card className="animate-slide-up border-border/60" style={{ animationDelay: '180ms' }}>
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Avg Attendance</span>
+              <div className="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                <CalendarCheck className="h-4 w-4 text-amber-600 dark:text-amber-400" />
               </div>
-              <CalendarCheck className="h-8 w-8 text-primary" />
             </div>
+            <p className="text-3xl font-bold tracking-tight">{analytics.batches?.averageAttendance?.toFixed(1) || 0}%</p>
+            <p className="text-xs text-muted-foreground mt-1">Across all batches</p>
           </CardContent>
         </Card>
       </div>
@@ -206,48 +210,48 @@ export default function Analytics() {
         {/* Students Tab */}
         <TabsContent value="students" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Active Students</p>
-                    <p className="text-2xl font-bold text-green-600">{analytics.students?.activeStudents || 0}</p>
+            <Card className="border-border/60">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Active Students</span>
+                  <div className="w-9 h-9 rounded-xl bg-green-500/10 flex items-center justify-center">
+                    <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
                   </div>
-                  <TrendingUp className="h-6 w-6 text-green-500" />
                 </div>
+                <p className="text-2xl font-bold tracking-tight text-green-600 dark:text-green-400">{analytics.students?.activeStudents || 0}</p>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Placed Students</p>
-                    <p className="text-2xl font-bold text-blue-600">{analytics.students?.placedStudents || 0}</p>
+            <Card className="border-border/60">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Placed Students</span>
+                  <div className="w-9 h-9 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                    <GraduationCap className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <GraduationCap className="h-6 w-6 text-blue-500" />
                 </div>
+                <p className="text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{analytics.students?.placedStudents || 0}</p>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Interview Required</p>
-                    <p className="text-2xl font-bold text-yellow-600">{analytics.students?.interviewRequired || 0}</p>
+            <Card className="border-border/60">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Interview Required</span>
+                  <div className="w-9 h-9 rounded-xl bg-yellow-500/10 flex items-center justify-center">
+                    <CalendarCheck className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
                   </div>
-                  <CalendarCheck className="h-6 w-6 text-yellow-500" />
                 </div>
+                <p className="text-2xl font-bold tracking-tight text-yellow-600 dark:text-yellow-400">{analytics.students?.interviewRequired || 0}</p>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Revoked</p>
-                    <p className="text-2xl font-bold text-red-600">{analytics.students?.revokedStudents || 0}</p>
+            <Card className="border-border/60">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Revoked</span>
+                  <div className="w-9 h-9 rounded-xl bg-red-500/10 flex items-center justify-center">
+                    <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
                   </div>
-                  <TrendingDown className="h-6 w-6 text-red-500" />
                 </div>
+                <p className="text-2xl font-bold tracking-tight text-red-600 dark:text-red-400">{analytics.students?.revokedStudents || 0}</p>
               </CardContent>
             </Card>
           </div>
@@ -259,10 +263,10 @@ export default function Analytics() {
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {getStatusDistribution().map((item, idx) => (
-                  <div key={idx} className="text-center p-4 bg-muted rounded-lg">
-                    <p className="text-3xl font-bold">{item.value}</p>
-                    <p className="text-sm text-muted-foreground">{item.label}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{item.percentage.toFixed(1)}%</p>
+                  <div key={idx} className={`relative p-4 rounded-xl border-l-4 ${item.borderColor} ${item.bgColor} bg-opacity-50`}>
+                    <p className={`text-3xl font-bold tracking-tight ${item.textColor}`}>{item.value}</p>
+                    <p className="text-sm font-medium mt-1">{item.label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{item.percentage.toFixed(1)}% of total</p>
                   </div>
                 ))}
               </div>
@@ -362,18 +366,32 @@ export default function Analytics() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {analytics.schools?.schoolsList?.map((school: any, idx: number) => (
-                  <div key={idx} className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                    <div>
-                      <p className="font-medium">{school.name}</p>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                        <span>{school.totalBatches} batches</span>
-                        <span>{school.totalStudents} students</span>
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-4 rounded-xl border border-border/60 border-l-4 border-l-violet-500 bg-muted/30 hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center flex-shrink-0">
+                        <School className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                      </div>
+                      <div>
+                        <p className="font-medium leading-none">{school.name}</p>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1.5">
+                          <span className="flex items-center gap-1">
+                            <GraduationCap className="h-3 w-3" />
+                            {school.totalBatches} batches
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Users className="h-3 w-3" />
+                            {school.totalStudents} students
+                          </span>
+                        </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-2xl font-bold">
+                      <p className="text-xl font-bold tracking-tight text-violet-600 dark:text-violet-400">
                         {school.totalStudents > 0
                           ? ((school.totalStudents / (analytics.schools?.totalStudents || 1)) * 100).toFixed(1)
                           : 0}%
