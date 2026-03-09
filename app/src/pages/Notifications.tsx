@@ -330,104 +330,57 @@ export default function Notifications() {
             </Select>
           </div>
 
-          {/* Stats row */}
-          <div className="flex items-center gap-3 mb-5 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted text-xs font-medium text-muted-foreground border border-border/50">
-              <Bell className="h-3 w-3" /> {notifications.length} Total
-            </span>
-            {(['urgent','high','medium','low'] as const).map(p => {
-              const count = notifications.filter(n => n.priority === p).length;
-              if (!count) return null;
-              const cfg: Record<string, string> = {
-                urgent: 'bg-red-500/10 text-red-600 border-red-500/30 dark:text-red-400',
-                high: 'bg-orange-500/10 text-orange-600 border-orange-500/30 dark:text-orange-400',
-                medium: 'bg-blue-500/10 text-blue-600 border-blue-500/30 dark:text-blue-400',
-                low: 'bg-muted text-muted-foreground border-border/50',
-              };
-              return (
-                <span key={p} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${cfg[p]}`}>
-                  {count} {p.charAt(0).toUpperCase() + p.slice(1)}
-                </span>
-              );
-            })}
-          </div>
-
           {/* Notifications List */}
-          <div className="space-y-3">
-            {filteredNotifications.map((notification, idx) => {
-              const priorityBorder: Record<string, string> = {
-                urgent: 'border-l-red-500',
-                high: 'border-l-orange-500',
-                medium: 'border-l-blue-500',
-                low: 'border-l-border',
-              };
-              const priorityIconBg: Record<string, string> = {
-                urgent: 'bg-red-500/10 text-red-600 dark:text-red-400',
-                high: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
-                medium: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-                low: 'bg-muted text-muted-foreground',
-              };
-              const borderClass = priorityBorder[notification.priority] || 'border-l-border';
-              const iconBgClass = priorityIconBg[notification.priority] || 'bg-muted text-muted-foreground';
-              return (
-                <Card key={notification._id} className={`border-l-4 ${borderClass} animate-slide-up`} style={{ animationDelay: `${idx * 40}ms` }}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${iconBgClass}`}>
-                        {notification.priority === 'urgent' || notification.priority === 'high'
-                          ? <AlertCircle className="h-4 w-4" />
-                          : <Bell className="h-4 w-4" />
-                        }
+          <div className="space-y-4">
+            {filteredNotifications.map((notification) => (
+              <Card key={notification._id}>
+                <CardContent className="p-6">
+                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-lg font-semibold">{notification.title}</h3>
+                        {getPriorityBadge(notification.priority)}
+                        {getTypeBadge(notification.type)}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap mb-1">
-                              <h3 className="text-sm font-semibold">{notification.title}</h3>
-                              {getPriorityBadge(notification.priority)}
-                              {getTypeBadge(notification.type)}
-                            </div>
-                            <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{notification.message}</p>
-                            <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-                              <span className="flex items-center gap-1">
-                                <User className="h-3 w-3" /> {notification.sentBy?.name}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
-                                {format(new Date(notification.sentAt || ''), 'dd MMM yyyy')}
-                              </span>
-                              {notification.recipients?.allStudents && (
-                                <Badge variant="secondary" className="text-[10px]">All Students</Badge>
-                              )}
-                            </div>
-                          </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem>View Details</DropdownMenuItem>
-                              <DropdownMenuItem>View Read Status</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                      <p className="text-muted-foreground mb-3">{notification.message}</p>
+                      <div className="flex items-center gap-4 text-sm">
+                        <div className="flex items-center gap-1">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <span>By: {notification.sentBy?.name}</span>
                         </div>
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <span>{format(new Date(notification.sentAt || ''), 'PPP')}</span>
+                        </div>
+                        {notification.recipients?.allStudents && (
+                          <Badge variant="secondary">All Students</Badge>
+                        )}
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem>View Details</DropdownMenuItem>
+                        <DropdownMenuItem>View Read Status</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
 
           {filteredNotifications.length === 0 && (
-            <div className="rounded-xl border border-dashed border-border p-12 text-center">
-              <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mx-auto mb-3">
-                <Bell className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <h3 className="text-sm font-medium mb-1">No notifications found</h3>
-              <p className="text-xs text-muted-foreground">Send your first notification to get started</p>
+            <div className="text-center py-12">
+              <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium">No notifications found</h3>
+              <p className="text-muted-foreground">
+                Send your first notification to get started
+              </p>
             </div>
           )}
         </div>
