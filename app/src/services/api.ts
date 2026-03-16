@@ -1,8 +1,10 @@
 import axios from 'axios';
 
 // ─── Axios instance with auth header ────────────────────────
+// In production, VITE_API_URL points to the Render backend (e.g. https://xxx.onrender.com)
+// In development, it's empty so Vite's proxy handles /api → localhost:5001
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: `${import.meta.env.VITE_API_URL || ''}/api`,
   headers: { 'Content-Type': 'application/json' }
 });
 
