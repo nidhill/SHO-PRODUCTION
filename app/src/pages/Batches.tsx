@@ -184,7 +184,7 @@ export default function Batches() {
   // ── Change SHO Handlers ───────────────────────────────
   const openChangeSHO = async (batch: Batch) => {
     setChangeSHOBatch(batch);
-    setSelectedSHOId(batch.assignedSHO?._id || '');
+    setSelectedSHOId((batch.assignedSHO as any)?._id || batch.assignedSHO?.id || '');
     setIsLoadingSHOUsers(true);
     try {
       const res = await userService.getAll();
@@ -664,7 +664,7 @@ export default function Batches() {
                   {shoUsers.map(u => {
                     const initials = u.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
                     const isSelected = selectedSHOId === u._id;
-                    const isCurrent = changeSHOBatch?.assignedSHO?._id === u._id || (changeSHOBatch?.assignedSHO as any)?._id === u._id;
+                    const isCurrent = (changeSHOBatch?.assignedSHO as any)?._id === u._id;
                     return (
                       <button
                         key={u._id}
@@ -835,7 +835,7 @@ export default function Batches() {
                     Create New Mentor
                   </p>
                   <button
-                    onClick={() => { setShowCreateMentor(v => !v); setNewMentor({ name: '', email: '', phone: '' }); }}
+                    onClick={() => { setShowCreateMentor(v => !v); setNewMentor({ name: '', email: '', phone: '', subject: '' }); }}
                     className="text-[11px] text-primary hover:underline flex items-center gap-1"
                   >
                     {showCreateMentor ? <><X className="h-3 w-3" /> Cancel</> : <><UserPlus className="h-3 w-3" /> Add New</>}
