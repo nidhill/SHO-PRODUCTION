@@ -60,8 +60,7 @@ export default function Notifications() {
     recipients: {
       allStudents: false,
       batches: [] as string[],
-      students: [] as string[],
-      groups: [] as string[]
+      students: [] as string[]
     }
   });
 
@@ -122,8 +121,7 @@ export default function Notifications() {
         recipients: {
           allStudents: false,
           batches: [],
-          students: [],
-          groups: []
+          students: []
         }
       });
       fetchData();
@@ -157,8 +155,7 @@ export default function Notifications() {
     const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
       broadcast: 'default',
       individual: 'secondary',
-      batch: 'outline',
-      group: 'secondary'
+      batch: 'outline'
     };
     return <Badge variant={variants[type] || 'default'}>{type}</Badge>;
   };
@@ -230,7 +227,6 @@ export default function Notifications() {
                         <SelectItem value="broadcast">Broadcast (All Students)</SelectItem>
                         <SelectItem value="batch">Specific Batches</SelectItem>
                         <SelectItem value="individual">Specific Students</SelectItem>
-                        <SelectItem value="group">Groups</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

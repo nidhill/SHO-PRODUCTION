@@ -3,6 +3,7 @@ const router = express.Router();
 const User = require('../models/User');
 const AuditLog = require('../models/AuditLog');
 const { verifyToken } = require('../middleware/auth');
+const { sendEmail, welcomeTemplate } = require('../services/email');
 
 // GET /api/users
 router.get('/', verifyToken, async (req, res) => {
@@ -85,6 +86,14 @@ router.post('/', verifyToken, async (req, res) => {
             target: user._id.toString(),
             ip: req.ip
         });
+
+        // Send welcome email with credentials (fire-and-forget)
+        const tempPassword = password || 'password';
+        sendEmail(
+            user.email,
+            'Welcome to SHO App – Your Account Details',
+            welcomeTemplate(user.name, user.role, user.email, tempPassword)
+        ).catch(err => console.error('[Email] Welcome email failed:', err));
 
         res.status(201).json({
             success: true,

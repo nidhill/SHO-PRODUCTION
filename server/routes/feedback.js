@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Feedback = require('../models/Feedback');
 const { verifyToken } = require('../middleware/auth');
-const { sendEmail } = require('../services/email');
+const { sendEmail, feedbackFormTemplate } = require('../services/email');
 
 // GET /api/feedback
 router.get('/', verifyToken, async (req, res) => {
@@ -30,8 +30,6 @@ router.get('/:id', verifyToken, async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 });
-
-const fetch = require('cross-fetch');
 
 // POST /api/feedback/form/send
 router.post('/form/send', verifyToken, async (req, res) => {
@@ -69,16 +67,20 @@ router.post('/form/send', verifyToken, async (req, res) => {
             return res.status(400).json({ success: false, message: 'No valid student emails found' });
         }
 
-        // Send email via central Brevo email service
-        const emailHtml = `<html><body>
-            <p>Hello,</p>
-            <p>You have been requested to fill out a feedback form.</p>
-            <p><a href="${formLink}" style="display:inline-block;padding:10px 20px;background:#0070f3;color:white;border-radius:6px;text-decoration:none;">Open Feedback Form</a></p>
-            <p>Or copy this link: <a href="${formLink}">${formLink}</a></p>
-            <br/><p>Thank you,<br/>SHO App Team</p>
-        </body></html>`;
+        // Send professional branded emails to each recipient
+        const User = require('../models/User');
+        const sender = await User.findById(req.userId).select('name');
+        const senderName = sender?.name || 'SHO App Team';
 
-        await sendEmail(toList.map(t => t.email), 'Feedback Request - SHO App', emailHtml);
+        await Promise.all(
+            toList.map(recipient =>
+                sendEmail(
+                    recipient.email,
+                    'Feedback Request – SHO App',
+                    feedbackFormTemplate(recipient.name, formLink, senderName)
+                )
+            )
+        );
 
         // Save the record
         const feedback = await Feedback.create(recordData);

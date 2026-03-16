@@ -21,6 +21,7 @@ import {
   HelpCircle,
   Building2,
   Database,
+  FolderPlus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -43,6 +44,7 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }: SidebarProps)
     { path: '/students', label: 'Students', icon: GraduationCap, roles: [] },
     { path: '/school-management', label: 'Manage', icon: Building2, roles: ['ssho', 'academic', 'pl', 'leadership', 'admin', 'ceo_haca'] },
     { path: '/schools', label: 'Schools', icon: School, roles: ['leadership', 'admin', 'ssho', 'academic', 'ceo_haca', 'pl'] },
+    { path: '/academic-management', label: 'Intake', icon: FolderPlus, roles: ['ssho', 'academic', 'pl', 'leadership', 'admin', 'ceo_haca'] },
   ];
 
   const managementNavItems = [

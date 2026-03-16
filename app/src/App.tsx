@@ -21,6 +21,7 @@ import Users from './pages/Users';
 import AuditLogs from './pages/AuditLogs';
 import Settings from './pages/Settings';
 import SystemStorage from './pages/SystemStorage';
+import AcademicLeadManagement from './pages/AcademicLeadManagement';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import { Toaster } from '@/components/ui/sonner';
@@ -110,6 +111,11 @@ function App() {
               <Route path="/audit-logs" element={
                 <ProtectedRoute allowedRoles={['leadership', 'admin', 'ceo_haca']}>
                   <AuditLogs />
+                </ProtectedRoute>
+              } />
+              <Route path="/academic-management" element={
+                <ProtectedRoute allowedRoles={['ssho', 'academic', 'pl', 'leadership', 'admin', 'ceo_haca']}>
+                  <AcademicLeadManagement />
                 </ProtectedRoute>
               } />
               <Route path="/settings" element={

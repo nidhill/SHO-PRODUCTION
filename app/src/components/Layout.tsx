@@ -30,6 +30,7 @@ export default function Layout() {
         else if (path.startsWith('/analytics')) title = 'Analytics | SHO';
         else if (path.startsWith('/system-storage')) title = 'System Storage | SHO';
         else if (path.startsWith('/audit-logs')) title = 'Audit Logs | SHO';
+        else if (path.startsWith('/academic-management')) title = 'Academic Management | SHO';
         else if (path.startsWith('/settings')) title = 'Settings | SHO';
 
         document.title = title;

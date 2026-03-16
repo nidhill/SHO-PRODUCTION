@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Notification = require('../models/Notification');
 const { verifyToken } = require('../middleware/auth');
-const { sendEmail } = require('../services/email');
+const { sendEmail, notificationTemplate } = require('../services/email');
 
 // GET /api/notifications
 router.get('/', verifyToken, async (req, res) => {
@@ -75,12 +75,15 @@ router.post('/', verifyToken, async (req, res) => {
                 studentEmails = [...new Set(studentEmails)];
 
                 if (studentEmails.length > 0) {
-                    const html = `<html><body>
-                        <h2>${data.title || 'New Notification'}</h2>
-                        <p>${data.message}</p>
-                        <br/><p>— SHO App Team</p>
-                    </body></html>`;
-                    await sendEmail(studentEmails, data.title || 'Notification - SHO App', html);
+                    const User = require('../models/User');
+                    const sender = await User.findById(req.userId).select('name');
+                    const html = notificationTemplate(
+                        data.title || 'New Notification',
+                        data.message,
+                        sender?.name || 'SHO App Team',
+                        data.priority || 'medium'
+                    );
+                    await sendEmail(studentEmails, data.title || 'Notification – SHO App', html);
                 }
             } catch (err) {
                 console.error('Failed to send notification emails:', err.message);

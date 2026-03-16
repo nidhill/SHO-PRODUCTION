@@ -336,38 +336,6 @@ export const notificationService = {
   }
 };
 
-// ─── Group Service ─────────────────────────────────────────
-export const groupService = {
-  getAll: async (params?: any) => {
-    const res = await api.get('/groups', { params });
-    return { data: res.data };
-  },
-  getById: async (id: string) => {
-    const res = await api.get(`/groups/${id}`);
-    return { data: res.data };
-  },
-  create: async (data: any) => {
-    const res = await api.post('/groups', data);
-    return { data: res.data };
-  },
-  addMember: async (id: string, studentId: string, role?: string) => {
-    const res = await api.post(`/groups/${id}/members`, { studentId, role });
-    return { data: res.data };
-  },
-  removeMember: async (id: string, studentId: string) => {
-    const res = await api.delete(`/groups/${id}/members/${studentId}`);
-    return { data: res.data };
-  },
-  update: async (id: string, data: any) => {
-    const res = await api.put(`/groups/${id}`, data);
-    return { data: res.data };
-  },
-  delete: async (id: string) => {
-    const res = await api.delete(`/groups/${id}`);
-    return { data: res.data };
-  }
-};
-
 // ─── Class Planner Service ─────────────────────────────────
 export const classPlannerService = {
   getAll: async () => {
@@ -406,7 +374,6 @@ export default {
   assignments: assignmentService,
   feedback: feedbackService,
   notifications: notificationService,
-  groups: groupService,
   classPlanner: classPlannerService,
   audit: auditService,
   system: systemService

@@ -1,5 +1,5 @@
 // Mock API service for demo purposes
-import type { User, Batch, Student, School, Assignment, FeedbackItem, Notification, Group, AuditLog } from '@/types';
+import type { User, Batch, Student, School, Assignment, FeedbackItem, Notification, AuditLog } from '@/types';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -32,9 +32,6 @@ const mockFeedback: FeedbackItem[] = [];
 
 // Mock Notifications
 const mockNotifications: Notification[] = [];
-
-// Mock Groups
-const mockGroups: Group[] = [];
 
 // Mock Audit Logs
 const mockAuditLogs: AuditLog[] = [];
@@ -350,67 +347,6 @@ export const mockApi = {
       data: {
         success: true,
         notification: newNotification
-      }
-    };
-  },
-
-  // Groups
-  getGroups: async () => {
-    await delay(400);
-    return {
-      data: {
-        success: true,
-        groups: mockGroups
-      }
-    };
-  },
-
-  createGroup: async (data: any) => {
-    await delay(500);
-    const newGroup: Group = {
-      _id: `g${Date.now()}`,
-      ...data,
-      createdBy: mockUsers[0],
-      members: []
-    };
-    mockGroups.push(newGroup);
-    return {
-      data: {
-        success: true,
-        group: newGroup
-      }
-    };
-  },
-
-  addGroupMember: async (groupId: string, studentId: string) => {
-    await delay(300);
-    const group = mockGroups.find(g => g._id === groupId);
-    const student = mockStudents.find(s => s._id === studentId);
-    if (group && student) {
-      group.members.push({
-        student,
-        joinedAt: new Date().toISOString(),
-        role: 'member'
-      });
-    }
-    return {
-      data: {
-        success: true,
-        group
-      }
-    };
-  },
-
-  removeGroupMember: async (groupId: string, studentId: string) => {
-    await delay(300);
-    const group = mockGroups.find(g => g._id === groupId);
-    if (group) {
-      group.members = group.members.filter(m => m.student._id !== studentId);
-    }
-    return {
-      data: {
-        success: true,
-        group
       }
     };
   },

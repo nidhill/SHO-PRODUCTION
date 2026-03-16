@@ -15,7 +15,6 @@ import {
   School,
   Star,
   Bell,
-  UserCircle,
   CalendarDays,
   MessageSquare,
   ChevronRight,
@@ -177,8 +176,7 @@ export default function Dashboard() {
     { label: 'Send Notice', icon: Bell, path: '/notifications', roles: ['sho', 'ssho', 'academic', 'leadership', 'admin', 'ceo_haca', 'pl'] },
     { label: 'Feedback', icon: MessageSquare, path: '/feedback', roles: [] },
     { label: 'Students', icon: GraduationCap, path: '/students', roles: [] },
-    { label: 'Groups', icon: UserCircle, path: '/groups', roles: [] },
-    { label: 'Class Planner', icon: CalendarDays, path: '/class-planner', roles: [] },
+{ label: 'Class Planner', icon: CalendarDays, path: '/class-planner', roles: [] },
     { label: 'Analytics', icon: TrendingUp, path: '/analytics', roles: [] },
     { label: 'Add User', icon: UserPlus, path: '/users', roles: ['leadership', 'admin', 'ceo_haca'] },
   ].filter(action => action.roles.length === 0 || hasRole(action.roles));

@@ -162,13 +162,12 @@ export interface Notification {
   _id: string;
   title: string;
   message: string;
-  type: 'broadcast' | 'individual' | 'batch' | 'group';
+  type: 'broadcast' | 'individual' | 'batch';
   sentBy: User;
   recipients: {
     allStudents: boolean;
     batches: Batch[];
     students: Student[];
-    groups: Group[];
   };
   priority: 'low' | 'medium' | 'high' | 'urgent';
   readStatus: {
@@ -178,20 +177,6 @@ export interface Notification {
   }[];
   attachments: Attachment[];
   sentAt: string;
-}
-
-export interface Group {
-  _id: string;
-  name: string;
-  description?: string;
-  batch: Batch;
-  createdBy: User;
-  members: {
-    student: Student;
-    joinedAt: string;
-    role: 'member' | 'leader' | 'co_leader';
-  }[];
-  groupType: 'study' | 'project' | 'discussion' | 'activity' | 'general';
 }
 
 export interface Analytics {

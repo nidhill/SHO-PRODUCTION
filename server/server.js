@@ -26,7 +26,6 @@ app.use('/api/attendance', require('./routes/attendance'));
 app.use('/api/assignments', require('./routes/assignments'));
 app.use('/api/feedback', require('./routes/feedback'));
 app.use('/api/notifications', require('./routes/notifications'));
-app.use('/api/groups', require('./routes/groups'));
 app.use('/api/class-planner', require('./routes/classPlanner'));
 app.use('/api/audit-logs', require('./routes/auditLogs'));
 app.use('/api/system', require('./routes/system'));
