@@ -4,6 +4,10 @@ module.exports = {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["'DM Sans'", 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        heading: ["'Plus Jakarta Sans'", 'system-ui', '-apple-system', 'sans-serif'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

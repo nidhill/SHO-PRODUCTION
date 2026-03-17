@@ -183,10 +183,23 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Loading dashboard…</p>
+      <div className="p-4 lg:p-8 max-w-[1200px] mx-auto">
+        {/* Header skeleton */}
+        <div className="mb-8">
+          <div className="h-6 w-40 bg-muted rounded-full mb-4 animate-pulse" />
+          <div className="h-8 w-72 bg-muted rounded-lg mb-2 animate-pulse" />
+          <div className="h-4 w-52 bg-muted rounded animate-pulse" />
+        </div>
+        {/* Stat cards skeleton */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-28 bg-muted rounded-xl animate-pulse" />
+          ))}
+        </div>
+        {/* Content skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+          <div className="lg:col-span-3 h-60 bg-muted rounded-xl animate-pulse" />
+          <div className="lg:col-span-2 h-60 bg-muted rounded-xl animate-pulse" />
         </div>
       </div>
     );
@@ -200,6 +213,7 @@ export default function Dashboard() {
       icon: Users,
       color: 'text-blue-600 dark:text-blue-400',
       bg: 'bg-blue-500/10',
+      accent: 'card-accent-blue',
     },
     {
       label: 'Students',
@@ -208,6 +222,7 @@ export default function Dashboard() {
       icon: GraduationCap,
       color: 'text-emerald-600 dark:text-emerald-400',
       bg: 'bg-emerald-500/10',
+      accent: 'card-accent-emerald',
     },
     ...(hasRole(['leadership', 'admin', 'ssho', 'academic', 'mentor', 'ceo_haca', 'pl'])
       ? [{
@@ -217,6 +232,7 @@ export default function Dashboard() {
         icon: School,
         color: 'text-violet-600 dark:text-violet-400',
         bg: 'bg-violet-500/10',
+        accent: 'card-accent-violet',
       }]
       : [{
         label: 'Attendance',
@@ -225,6 +241,7 @@ export default function Dashboard() {
         icon: CalendarCheck,
         color: 'text-amber-600 dark:text-amber-400',
         bg: 'bg-amber-500/10',
+        accent: 'card-accent-amber',
         hasProgress: true,
         progressValue: stats?.averageAttendance || 0,
       }]
@@ -236,6 +253,7 @@ export default function Dashboard() {
       icon: Star,
       color: 'text-amber-600 dark:text-amber-400',
       bg: 'bg-amber-500/10',
+      accent: 'card-accent-amber',
       hasProgress: true,
       progressValue: (stats?.averageFeedbackScore || 0) * 20,
     },
@@ -373,20 +391,20 @@ export default function Dashboard() {
           return (
             <Card
               key={stat.label}
-              className="animate-slide-up border-border/60 hover:border-border transition-colors"
+              className={`animate-slide-up border-border/60 card-hover overflow-hidden ${(stat as any).accent}`}
               style={{ animationDelay: `${index * 0.05}s` }}
             >
-              <CardContent className="p-4">
+              <CardContent className="p-4 pt-5">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{stat.label}</span>
-                  <div className={`w-8 h-8 rounded-lg ${stat.bg} flex items-center justify-center`}>
-                    <Icon className={`h-4 w-4 ${stat.color}`} />
+                  <span className="section-title">{stat.label}</span>
+                  <div className={`w-9 h-9 rounded-xl ${stat.bg} flex items-center justify-center`}>
+                    <Icon className={`h-4.5 w-4.5 ${stat.color}`} />
                   </div>
                 </div>
                 <div className="stat-number">{stat.value}</div>
-                <p className="text-[11px] text-muted-foreground mt-1">{stat.subtitle}</p>
+                <p className="text-[11px] text-muted-foreground mt-1 leading-snug">{stat.subtitle}</p>
                 {(stat as any).hasProgress && (
-                  <Progress value={(stat as any).progressValue || 0} className="mt-2 h-1" />
+                  <Progress value={(stat as any).progressValue || 0} className="mt-2.5 h-1" />
                 )}
               </CardContent>
             </Card>

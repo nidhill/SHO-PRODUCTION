@@ -3,86 +3,138 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import Sidebar from '@/components/Sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Moon, Sun, LogOut } from 'lucide-react';
+import { Moon, Sun, LogOut, Menu } from 'lucide-react';
+
+const ROUTE_TITLES: Record<string, string> = {
+  '/dashboard': 'Dashboard',
+  '/batches': 'Batches',
+  '/students': 'Students',
+  '/school-management': 'Manage Schools',
+  '/schools': 'Schools',
+  '/attendance': 'Attendance',
+  '/assignments': 'Tasks',
+  '/feedback': 'Feedback',
+  '/class-planner': 'Class Planner',
+  '/users': 'Users',
+  '/notifications': 'Inbox',
+  '/analytics': 'Analytics',
+  '/system-storage': 'System Storage',
+  '/audit-logs': 'Audit Logs',
+  '/academic-management': 'Academic Management',
+  '/settings': 'Settings',
+};
+
+const ROLE_LABELS: Record<string, string> = {
+  sho: 'SHO',
+  ssho: 'Senior SHO',
+  academic: 'Academic Lead',
+  mentor: 'Mentor',
+  leadership: 'Leadership',
+  admin: 'Administrator',
+  ceo_haca: 'CEO',
+  pl: 'Project Lead',
+};
 
 export default function Layout() {
-    const [isCollapsed, setIsCollapsed] = useState(false);
-    const [isMobileOpen, setIsMobileOpen] = useState(false);
-    const { user, logout } = useAuth();
-    const { theme, toggleTheme } = useTheme();
-    const location = useLocation();
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const location = useLocation();
 
-    useEffect(() => {
-        const path = location.pathname;
-        let title = 'SHO App';
+  const pageTitle =
+    Object.entries(ROUTE_TITLES).find(
+      ([path]) => location.pathname === path || location.pathname.startsWith(`${path}/`)
+    )?.[1] ?? 'SHO';
 
-        if (path.startsWith('/dashboard')) title = 'Home | SHO';
-        else if (path.startsWith('/batches')) title = 'Batches | SHO';
-        else if (path.startsWith('/students')) title = 'Students | SHO';
-        else if (path.startsWith('/school-management')) title = 'Manage Schools | SHO';
-        else if (path.startsWith('/schools')) title = 'Schools | SHO';
-        else if (path.startsWith('/attendance')) title = 'Attendance | SHO';
-        else if (path.startsWith('/assignments')) title = 'Tasks | SHO';
-        else if (path.startsWith('/feedback')) title = 'Feedback | SHO';
-        else if (path.startsWith('/class-planner')) title = 'Planner | SHO';
-        else if (path.startsWith('/users')) title = 'Users | SHO';
-        else if (path.startsWith('/notifications')) title = 'Inbox | SHO';
-        else if (path.startsWith('/analytics')) title = 'Analytics | SHO';
-        else if (path.startsWith('/system-storage')) title = 'System Storage | SHO';
-        else if (path.startsWith('/audit-logs')) title = 'Audit Logs | SHO';
-        else if (path.startsWith('/academic-management')) title = 'Academic Management | SHO';
-        else if (path.startsWith('/settings')) title = 'Settings | SHO';
+  useEffect(() => {
+    document.title = `${pageTitle} | SHO`;
+  }, [pageTitle]);
 
-        document.title = title;
-    }, [location]);
+  const initials = user?.name
+    ? user.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+    : 'U';
 
-    return (
-        <div className="h-screen w-full bg-background flex overflow-hidden">
-            <Sidebar
-                isCollapsed={isCollapsed}
-                setIsCollapsed={setIsCollapsed}
-                isMobileOpen={isMobileOpen}
-                setIsMobileOpen={setIsMobileOpen}
-            />
-            <main className="flex-1 transition-all duration-200 lg:ml-[90px] h-full flex flex-col overflow-hidden w-full relative">
-                <header className="h-16 flex items-center justify-end px-4 lg:px-8 border-b border-border/40 bg-background/95 backdrop-blur z-20 flex-shrink-0 gap-3">
-                    {/* Theme Toggle */}
-                    <button
-                        onClick={toggleTheme}
-                        className="relative w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors overflow-hidden"
-                        title="Toggle theme"
-                    >
-                        <Sun className={`absolute h-5 w-5 transition-all duration-500 ease-in-out ${theme === 'light' ? 'rotate-90 scale-0 opacity-0' : 'rotate-0 scale-100 opacity-100'}`} />
-                        <Moon className={`absolute h-5 w-5 transition-all duration-500 ease-in-out ${theme === 'light' ? 'rotate-0 scale-100 opacity-100' : '-rotate-90 scale-0 opacity-0'}`} />
-                    </button>
+  return (
+    <div className="h-screen w-full bg-background flex overflow-hidden">
+      <Sidebar
+        isCollapsed={false}
+        setIsCollapsed={() => {}}
+        isMobileOpen={isMobileOpen}
+        setIsMobileOpen={setIsMobileOpen}
+      />
 
-                    {/* User Profile Avatar */}
-                    <Link
-                        to="/settings"
-                        className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 flex items-center justify-center relative group hover:scale-105 transition-transform"
-                        title="Profile Settings"
-                    >
-                        <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                            {user?.name?.charAt(0).toUpperCase() || 'U'}
-                        </span>
-                        <div className="absolute right-0 bottom-0 w-2.5 h-2.5 bg-green-500 border border-white dark:border-background rounded-full"></div>
-                    </Link>
+      <main className="flex-1 lg:ml-[90px] h-full flex flex-col overflow-hidden w-full relative">
+        <header className="h-14 flex items-center justify-between px-4 lg:px-6 border-b border-border/50 bg-background/95 backdrop-blur-md z-20 flex-shrink-0">
 
-                    {/* Logout */}
-                    <button
-                        onClick={logout}
-                        className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 transition-colors ml-1"
-                        title="Sign out"
-                    >
-                        <LogOut className="h-4 w-4" />
-                    </button>
-                </header>
+          {/* Left: mobile toggle + page title */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsMobileOpen(true)}
+              className="lg:hidden w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              aria-label="Open menu"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+            <h1 className="text-[15px] font-semibold tracking-tight text-foreground font-heading leading-none">
+              {pageTitle}
+            </h1>
+          </div>
 
-                <div className="flex-1 overflow-y-auto w-full relative">
-                    <Outlet />
-                </div>
-            </main>
+          {/* Right: theme + user + logout */}
+          <div className="flex items-center gap-1">
+            {/* Theme toggle */}
+            <button
+              onClick={toggleTheme}
+              className="relative w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors overflow-hidden"
+              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              <Sun
+                className={`absolute h-[18px] w-[18px] transition-all duration-500 ${
+                  theme === 'light' ? 'rotate-90 scale-0 opacity-0' : 'rotate-0 scale-100 opacity-100'
+                }`}
+              />
+              <Moon
+                className={`absolute h-[18px] w-[18px] transition-all duration-500 ${
+                  theme === 'light' ? 'rotate-0 scale-100 opacity-100' : '-rotate-90 scale-0 opacity-0'
+                }`}
+              />
+            </button>
+
+            {/* User profile */}
+            <Link
+              to="/settings"
+              className="flex items-center gap-2 pl-1.5 pr-3 py-1 rounded-lg hover:bg-muted transition-colors ml-1"
+              title="Profile & Settings"
+            >
+              <div className="relative w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+                <span className="text-[11px] font-bold text-white leading-none">{initials}</span>
+                <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-background rounded-full" />
+              </div>
+              <div className="hidden sm:block leading-none">
+                <p className="text-[13px] font-semibold text-foreground leading-none">
+                  {user?.name?.split(' ')[0]}
+                </p>
+                <p className="text-[11px] text-muted-foreground leading-none mt-0.5">
+                  {ROLE_LABELS[user?.role ?? ''] ?? user?.role}
+                </p>
+              </div>
+            </Link>
+
+            {/* Logout */}
+            <button
+              onClick={logout}
+              className="w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400 transition-colors"
+              title="Sign out"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
+        </header>
+
+        <div className="flex-1 overflow-y-auto w-full relative">
+          <Outlet />
         </div>
-    );
+      </main>
+    </div>
+  );
 }
-

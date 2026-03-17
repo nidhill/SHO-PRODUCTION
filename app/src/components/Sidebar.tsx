@@ -11,10 +11,7 @@ import {
   Bell,
   School,
   BarChart3,
-
-  Menu,
   CalendarDays,
-  X,
   UserCog,
   ShieldAlert,
   Settings as SettingsIcon,
@@ -22,8 +19,8 @@ import {
   Building2,
   Database,
   FolderPlus,
+  X,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
@@ -76,25 +73,35 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }: SidebarProps)
         to={item.path}
         onClick={() => setIsMobileOpen(false)}
         className={cn(
-          "relative flex flex-col items-center justify-center gap-1.5 w-full h-[72px] transition-colors duration-200 group rounded-none",
+          'relative flex flex-col items-center justify-center gap-1.5 w-full h-[68px] transition-all duration-200 group',
           isActive
-            ? "bg-[#F4F6FF] dark:bg-blue-900/10 text-[#0052FF]"
-            : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-white/[0.02]"
+            ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400'
+            : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-white/[0.03]'
         )}
       >
-        {/* Active border indicator */}
+        {/* Active left border */}
         {isActive && (
-          <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-[#0052FF] dark:bg-blue-500 rounded-r-md" />
+          <div className="absolute left-0 top-2 bottom-2 w-[3px] bg-blue-600 dark:bg-blue-400 rounded-r-full" />
         )}
 
-        <Icon className={cn(
-          "h-[22px] w-[22px] flex-shrink-0 transition-transform group-hover:scale-110",
-          isActive ? "text-[#0052FF] dark:text-blue-400" : ""
-        )} strokeWidth={isActive ? 2.5 : 2} />
+        <div className={cn(
+          'w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200',
+          isActive
+            ? 'bg-blue-600 dark:bg-blue-500 shadow-md shadow-blue-600/25'
+            : 'bg-transparent group-hover:bg-slate-100 dark:group-hover:bg-white/[0.05]'
+        )}>
+          <Icon
+            className={cn(
+              'h-[18px] w-[18px] flex-shrink-0 transition-all',
+              isActive ? 'text-white' : ''
+            )}
+            strokeWidth={isActive ? 2.5 : 2}
+          />
+        </div>
 
         <span className={cn(
-          "text-[10px] font-medium tracking-wide text-center leading-tight px-1",
-          isActive ? "font-semibold text-[#0052FF] dark:text-blue-400" : ""
+          'text-[10px] font-medium tracking-wide text-center leading-none',
+          isActive ? 'font-semibold text-blue-600 dark:text-blue-400' : ''
         )}>
           {item.label}
         </span>
@@ -102,8 +109,8 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }: SidebarProps)
     );
   };
 
-  const NavGroupSeparator = () => (
-    <div className="w-8 h-px bg-slate-200 dark:bg-white/[0.08] mx-auto my-2" />
+  const Divider = () => (
+    <div className="mx-auto my-1.5 w-7 h-px bg-slate-200 dark:bg-white/[0.07]" />
   );
 
   return (
@@ -111,94 +118,63 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }: SidebarProps)
       {/* Mobile Overlay */}
       {isMobileOpen && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setIsMobileOpen(false)}
         />
       )}
 
-      {/* Mobile Toggle */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="fixed top-4 left-4 z-50 lg:hidden bg-card shadow-sm border border-border h-9 w-9"
-        onClick={() => setIsMobileOpen(!isMobileOpen)}
-      >
-        {isMobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-      </Button>
-
-      {/* Sidebar */}
+      {/* Sidebar panel */}
       <aside
         className={cn(
-          "fixed left-0 top-0 h-screen z-40 py-4 flex flex-col items-center justify-between transition-transform duration-200 w-[90px]",
-          "bg-white dark:bg-[#0B1120] border-r border-slate-200 dark:border-white/[0.06]",
-          isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          'fixed left-0 top-0 h-screen z-50 flex flex-col items-center transition-transform duration-250 w-[86px]',
+          'bg-white dark:bg-[#070d1a] border-r border-slate-200/80 dark:border-white/[0.05]',
+          isMobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
         )}
       >
-        {/* Header / Logo */}
-        <div className="h-16 flex flex-col items-center justify-center w-full flex-shrink-0 mb-2">
-          <div className="w-[42px] h-[42px] bg-[#0052FF] rounded-xl flex items-center justify-center shadow-md shadow-blue-500/20">
-            <GraduationCap className="h-6 w-6 text-white" strokeWidth={2.5} />
+        {/* Logo area */}
+        <div className="h-14 flex flex-col items-center justify-center w-full flex-shrink-0 border-b border-slate-200/60 dark:border-white/[0.04] mb-1">
+          <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/30">
+            <GraduationCap className="h-5 w-5 text-white" strokeWidth={2.5} />
           </div>
         </div>
 
+        {/* Mobile close button */}
+        <button
+          onClick={() => setIsMobileOpen(false)}
+          className="lg:hidden absolute top-3 right-2 w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
         {/* Navigation */}
-        <nav className="flex-1 w-full overflow-y-auto custom-scrollbar pb-4">
+        <nav className="flex-1 w-full overflow-y-auto pb-4 pt-1" style={{ scrollbarWidth: 'none' }}>
           <div className="flex flex-col w-full">
-            {filterItems(mainNavItems).map((item) => (
-              renderNavItem(item)
-            ))}
+            {filterItems(mainNavItems).map(renderNavItem)}
 
             {filterItems(managementNavItems).length > 0 && (
               <>
-                <NavGroupSeparator />
-                {filterItems(managementNavItems).map((item) => (
-                  renderNavItem(item)
-                ))}
+                <Divider />
+                {filterItems(managementNavItems).map(renderNavItem)}
               </>
             )}
 
             {filterItems(otherNavItems).length > 0 && (
               <>
-                <NavGroupSeparator />
-                {filterItems(otherNavItems).map((item) => (
-                  renderNavItem(item)
-                ))}
+                <Divider />
+                {filterItems(otherNavItems).map(renderNavItem)}
               </>
             )}
 
-            {/* Help item (static, unclickable for aesthetics or can be made real) */}
-            <NavGroupSeparator />
-            <div className="relative flex flex-col items-center justify-center gap-1.5 w-full h-[72px] text-slate-500 hover:text-slate-900 cursor-pointer transition-colors group">
-              <HelpCircle className="h-[22px] w-[22px] flex-shrink-0 transition-transform group-hover:scale-110" strokeWidth={2} />
-              <span className="text-[10px] font-medium tracking-wide">Help</span>
+            <Divider />
+            <div className="relative flex flex-col items-center justify-center gap-1.5 w-full h-[68px] text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer transition-colors group">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center group-hover:bg-slate-100 dark:group-hover:bg-white/[0.05] transition-colors">
+                <HelpCircle className="h-[18px] w-[18px]" strokeWidth={2} />
+              </div>
+              <span className="text-[10px] font-medium">Help</span>
             </div>
           </div>
         </nav>
-
-        {/* Removed Footer */}
       </aside>
-
-      {/* Global style for custom slim scrollbar */}
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 3px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background-color: rgba(156, 163, 175, 0.3);
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background-color: rgba(156, 163, 175, 0.5);
-        }
-        /* Fallback for Firefox */
-        .custom-scrollbar {
-          scrollbar-width: thin;
-          scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
-        }
-      `}</style>
     </TooltipProvider>
   );
 }
