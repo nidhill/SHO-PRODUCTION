@@ -39,7 +39,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { userService, batchService, schoolService } from '@/services/api';
-import { Loader2, Plus, Search, User as UserIcon, Mail, Phone, Lock, Trash2, GraduationCap } from 'lucide-react';
+import { Loader2, Plus, Search, User as UserIcon, Mail, Phone, Lock, Trash2, GraduationCap, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import type { User } from '@/types';
 
@@ -51,6 +51,11 @@ export default function Users() {
     const [isAddUserOpen, setIsAddUserOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [userToDelete, setUserToDelete] = useState<string | null>(null);
+
+    // Edit user state
+    const [editUser, setEditUser] = useState<User | null>(null);
+    const [editForm, setEditForm] = useState({ name: '', email: '', role: '', phone: '', school: '', assignedBatches: [] as string[] });
+    const [isEditSubmitting, setIsEditSubmitting] = useState(false);
     const [batches, setBatches] = useState<any[]>([]);
     const [batchSearch, setBatchSearch] = useState('');
     const [schools, setSchools] = useState<{ _id: string; name: string }[]>([]);
@@ -115,6 +120,34 @@ export default function Users() {
             toast.error('Failed to create user');
         } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    const openEdit = (u: User) => {
+        setEditUser(u);
+        setEditForm({
+            name: u.name,
+            email: u.email,
+            role: u.role,
+            phone: u.phone || '',
+            school: (u as any).school || '',
+            assignedBatches: ((u as any).assignedBatches || []).map((b: any) => b._id || b),
+        });
+    };
+
+    const handleEditUser = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editUser) return;
+        try {
+            setIsEditSubmitting(true);
+            await userService.update(editUser.id, editForm);
+            toast.success('User updated successfully');
+            setEditUser(null);
+            fetchUsers();
+        } catch {
+            toast.error('Failed to update user');
+        } finally {
+            setIsEditSubmitting(false);
         }
     };
 
@@ -471,15 +504,25 @@ export default function Users() {
                                             {user.phone || '-'}
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-muted-foreground hover:text-destructive transition-colors"
-                                                onClick={() => setUserToDelete(user.id)}
-                                                disabled={currentUser?.id === user.id}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
+                                            <div className="flex items-center justify-end gap-1">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-muted-foreground hover:text-foreground transition-colors"
+                                                    onClick={() => openEdit(user)}
+                                                >
+                                                    <Pencil className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-muted-foreground hover:text-destructive transition-colors"
+                                                    onClick={() => setUserToDelete(user.id)}
+                                                    disabled={currentUser?.id === user.id}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))
@@ -489,6 +532,126 @@ export default function Users() {
                 </div>
             </Card>
         </div>
+
+        {/* ── Edit User Dialog ───────────────────────────── */}
+        <Dialog open={!!editUser} onOpenChange={(open) => !open && setEditUser(null)}>
+            <DialogContent className="sm:max-w-[600px] bg-background/95 backdrop-blur-xl border-border/50">
+                <DialogHeader>
+                    <DialogTitle>Edit User</DialogTitle>
+                    <DialogDescription>Update user details and role assignments.</DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleEditUser} className="py-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label>Full Name</Label>
+                                <div className="relative">
+                                    <UserIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        placeholder="John Doe"
+                                        value={editForm.name}
+                                        onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                                        className="pl-9"
+                                        required
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Email</Label>
+                                <div className="relative">
+                                    <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        type="email"
+                                        placeholder="john@example.com"
+                                        value={editForm.email}
+                                        onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                                        className="pl-9"
+                                        required
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Phone</Label>
+                                <div className="relative">
+                                    <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        placeholder="9876543210"
+                                        value={editForm.phone}
+                                        onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                                        className="pl-9"
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Role</Label>
+                                <Select value={editForm.role} onValueChange={(v) => setEditForm({ ...editForm, role: v })}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="sho">SHO</SelectItem>
+                                        <SelectItem value="ssho">SSHO</SelectItem>
+                                        <SelectItem value="mentor">Mentor</SelectItem>
+                                        <SelectItem value="academic">Academic Lead</SelectItem>
+                                        <SelectItem value="pl">Project Lead</SelectItem>
+                                        <SelectItem value="leadership">Leadership</SelectItem>
+                                        <SelectItem value="ceo_haca">CEO / HACA</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>School</Label>
+                                <Select value={editForm.school} onValueChange={(v) => setEditForm({ ...editForm, school: v })}>
+                                    <SelectTrigger><SelectValue placeholder="Select school" /></SelectTrigger>
+                                    <SelectContent>
+                                        {schools.map(s => (
+                                            <SelectItem key={s._id} value={s.name}>{s.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2 flex flex-col">
+                            <Label>Assigned Batches</Label>
+                            <div className="flex-grow max-h-[260px] overflow-y-auto border rounded-xl p-2 space-y-1 bg-muted/20 custom-scrollbar">
+                                {batches.map((batch) => (
+                                    <label
+                                        key={batch._id}
+                                        className={`flex items-center gap-3 p-2.5 rounded-lg border border-transparent hover:bg-muted cursor-pointer transition-all ${editForm.assignedBatches.includes(batch._id) ? 'bg-primary/5 border-primary/20' : ''}`}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            className="rounded border-border w-4 h-4 accent-primary"
+                                            checked={editForm.assignedBatches.includes(batch._id)}
+                                            onChange={(e) => {
+                                                if (e.target.checked) {
+                                                    setEditForm({ ...editForm, assignedBatches: [...editForm.assignedBatches, batch._id] });
+                                                } else {
+                                                    setEditForm({ ...editForm, assignedBatches: editForm.assignedBatches.filter(id => id !== batch._id) });
+                                                }
+                                            }}
+                                        />
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-medium truncate">{batch.name}</p>
+                                            <p className="text-[10px] text-muted-foreground font-mono">{batch.code}</p>
+                                        </div>
+                                    </label>
+                                ))}
+                            </div>
+                            {editForm.assignedBatches.length > 0 && (
+                                <p className="text-xs text-primary font-medium mt-1">{editForm.assignedBatches.length} batch{editForm.assignedBatches.length !== 1 ? 'es' : ''} selected</p>
+                            )}
+                        </div>
+                    </div>
+
+                    <DialogFooter className="pt-5">
+                        <Button type="button" variant="ghost" onClick={() => setEditUser(null)}>Cancel</Button>
+                        <Button type="submit" disabled={isEditSubmitting}>
+                            {isEditSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : 'Save Changes'}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
 
     );
 }

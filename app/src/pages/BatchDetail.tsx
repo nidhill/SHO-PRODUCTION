@@ -9,10 +9,14 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   ArrowLeft, Search, Users, GraduationCap, CalendarCheck,
-  ClipboardList, Star, Loader2, School, ExternalLink,
+  ClipboardList, Star, Loader2, School, ExternalLink, ChevronDown,
 } from 'lucide-react';
-import { batchService } from '@/services/api';
+import { batchService, studentService } from '@/services/api';
+import { toast } from 'sonner';
 import type { Batch, Student } from '@/types';
 
 const statusVariant = (status: string) => {
@@ -33,6 +37,20 @@ export default function BatchDetail() {
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
+
+  const handleStatusChange = async (studentId: string, newStatus: string) => {
+    setUpdatingStatusId(studentId);
+    try {
+      await studentService.updateStatus(studentId, newStatus);
+      setStudents(prev => prev.map(s => s._id === studentId ? { ...s, status: newStatus as Student['status'] } : s));
+      toast.success('Status updated');
+    } catch {
+      toast.error('Failed to update status');
+    } finally {
+      setUpdatingStatusId(null);
+    }
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -202,9 +220,29 @@ export default function BatchDetail() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={statusVariant(student.status)} className="text-[10px] capitalize">
-                          {student.status?.replace('_', ' ')}
-                        </Badge>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="flex items-center gap-1 focus:outline-none">
+                              <Badge variant={statusVariant(student.status)} className="text-[10px] capitalize">
+                                {updatingStatusId === student._id
+                                  ? <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                                  : student.status?.replace('_', ' ')}
+                              </Badge>
+                              <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start" className="w-44">
+                            {(['active', 'placed', 'interview_required', 'revoked'] as const).map(s => (
+                              <DropdownMenuItem
+                                key={s}
+                                onClick={() => handleStatusChange(student._id, s)}
+                                className={student.status === s ? 'font-semibold' : ''}
+                              >
+                                {s.replace('_', ' ')}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2 min-w-[80px]">

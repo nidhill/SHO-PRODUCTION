@@ -56,6 +56,8 @@ import {
   X,
   UserPlus,
   UserMinus,
+  ChevronRight,
+  Calendar,
 } from 'lucide-react';
 import { batchService, userService } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -407,22 +409,22 @@ export default function Batches() {
         {filteredBatches.map((batch) => (
           <Card
             key={batch._id}
-            className="border-border/60 hover:border-border transition-colors group cursor-pointer"
+            className="border-border/60 hover:border-primary/40 hover:shadow-sm transition-all group cursor-pointer"
             onClick={() => navigate(`/batches/${batch._id}`)}
           >
             <CardContent className="p-4">
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-blue-500/10 flex items-center justify-center text-xs font-bold text-blue-600 dark:text-blue-400">
+                  <div className="w-9 h-9 rounded-lg bg-blue-500/10 flex items-center justify-center text-xs font-bold text-blue-600 dark:text-blue-400 shrink-0">
                     {batch.code?.slice(0, 2) || 'B'}
                   </div>
-                  <div>
-                    <h3 className="text-sm font-semibold">{batch.name}</h3>
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-semibold truncate">{batch.name}</h3>
                     <p className="text-[11px] text-muted-foreground">{batch.code}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
                   <Badge
                     variant={batch.status === 'active' ? 'default' : batch.status === 'completed' ? 'secondary' : 'outline'}
                     className="text-[10px] font-medium"
@@ -535,6 +537,17 @@ export default function Batches() {
                   </div>
                   <Progress value={batch.assignmentCompletionRate || 0} className="h-1" />
                 </div>
+              </div>
+
+              {/* Footer: start date + view indicator */}
+              <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/40">
+                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                  <Calendar className="h-2.5 w-2.5" />
+                  {batch.startDate ? new Date(batch.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'No start date'}
+                </span>
+                <span className="text-[10px] text-primary font-medium flex items-center gap-0.5 group-hover:gap-1.5 transition-all">
+                  View students <ChevronRight className="h-3 w-3" />
+                </span>
               </div>
             </CardContent>
           </Card>

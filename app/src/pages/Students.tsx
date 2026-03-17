@@ -37,6 +37,8 @@ export default function Students() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [batchFilter, setBatchFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 25;
 
   // Transfer state
   const [transferStudent, setTransferStudent] = useState<Student | null>(null);
@@ -72,6 +74,14 @@ export default function Students() {
     const matchesBatch = batchFilter === 'all' || student.batch?._id === batchFilter;
     return matchesSearch && matchesStatus && matchesBatch;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / PAGE_SIZE));
+  const paginatedStudents = filteredStudents.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  // Reset to page 1 when filters change
+  const handleSearchChange = (v: string) => { setSearchQuery(v); setCurrentPage(1); };
+  const handleStatusChange = (v: string) => { setStatusFilter(v); setCurrentPage(1); };
+  const handleBatchChange = (v: string) => { setBatchFilter(v); setCurrentPage(1); };
 
   const stats = {
     total: students.length,
@@ -176,12 +186,12 @@ export default function Students() {
               <Input
                 placeholder="Search by name, email, or mobile…"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="pl-9 h-9 text-sm"
               />
             </div>
             <div className="flex gap-2">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select value={statusFilter} onValueChange={handleStatusChange}>
                 <SelectTrigger className="w-[130px] h-9 text-sm">
                   <Filter className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
                   <SelectValue placeholder="Status" />
@@ -194,7 +204,7 @@ export default function Students() {
                   <SelectItem value="revoked">Revoked</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={batchFilter} onValueChange={setBatchFilter}>
+              <Select value={batchFilter} onValueChange={handleBatchChange}>
                 <SelectTrigger className="w-[140px] h-9 text-sm">
                   <Users className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
                   <SelectValue placeholder="Batch" />
@@ -227,7 +237,7 @@ export default function Students() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredStudents.map((student) => (
+              {paginatedStudents.map((student) => (
                 <TableRow key={student._id} className="group">
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -302,6 +312,54 @@ export default function Students() {
               <Users className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
               <p className="text-sm font-medium">No students found</p>
               <p className="text-xs text-muted-foreground mt-1">Try adjusting your filters</p>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {filteredStudents.length > PAGE_SIZE && (
+            <div className="flex items-center justify-between px-4 py-3 border-t border-border/50">
+              <p className="text-xs text-muted-foreground">
+                Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filteredStudents.length)} of {filteredStudents.length} students
+              </p>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+                  .reduce<(number | '...')[]>((acc, p, i, arr) => {
+                    if (i > 0 && (p as number) - (arr[i - 1] as number) > 1) acc.push('...');
+                    acc.push(p);
+                    return acc;
+                  }, [])
+                  .map((p, i) => p === '...'
+                    ? <span key={`ellipsis-${i}`} className="px-1 text-xs text-muted-foreground">…</span>
+                    : <Button
+                        key={p}
+                        variant={currentPage === p ? 'default' : 'outline'}
+                        size="sm"
+                        className="h-7 w-7 p-0 text-xs"
+                        onClick={() => setCurrentPage(p as number)}
+                      >
+                        {p}
+                      </Button>
+                  )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

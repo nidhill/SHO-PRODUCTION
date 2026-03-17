@@ -44,11 +44,11 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }: SidebarProps)
     { path: '/students', label: 'Students', icon: GraduationCap, roles: [] },
     { path: '/school-management', label: 'Manage', icon: Building2, roles: ['ssho', 'academic', 'pl', 'leadership', 'admin', 'ceo_haca'] },
     { path: '/schools', label: 'Schools', icon: School, roles: ['leadership', 'admin', 'ssho', 'academic', 'ceo_haca', 'pl'] },
-    { path: '/academic-management', label: 'Intake', icon: FolderPlus, roles: ['ssho', 'academic', 'pl', 'leadership', 'admin', 'ceo_haca'] },
+    { path: '/academic-management', label: 'New Intake', icon: FolderPlus, roles: ['ssho', 'academic', 'pl', 'leadership', 'admin', 'ceo_haca'] },
   ];
 
   const managementNavItems = [
-    { path: '/attendance', label: 'Attendance', icon: CalendarCheck, roles: ['sho'] },
+    { path: '/attendance', label: 'Attendance', icon: CalendarCheck, roles: ['sho', 'ssho', 'academic', 'pl', 'leadership', 'admin', 'ceo_haca'] },
     { path: '/assignments', label: 'Tasks', icon: ClipboardList, roles: [] },
     { path: '/feedback', label: 'Feedback', icon: MessageSquare, roles: [] },
     { path: '/class-planner', label: 'Planner', icon: CalendarDays, roles: [] },
