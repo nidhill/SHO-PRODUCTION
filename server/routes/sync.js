@@ -263,6 +263,7 @@ async function runSync() {
                     code: sBatch.id,
                     startDate: sBatch.start_date ? new Date(sBatch.start_date) : new Date(),
                     status: 'active',
+                    mode: sBatch.mode || null,
                     school: schoolRef,
                     assignedSHO: shoUser ? shoUser._id : undefined,
                     assignedSSHO: sshoUser ? sshoUser._id : undefined
@@ -276,6 +277,7 @@ async function runSync() {
                 if (!batch.school && schoolRef) { batch.school = schoolRef; updated = true; }
                 if (!batch.assignedSHO && shoUser) { batch.assignedSHO = shoUser._id; updated = true; syncStats.shoAssigned++; }
                 if (!batch.assignedSSHO && sshoUser) { batch.assignedSSHO = sshoUser._id; updated = true; syncStats.sshoAssigned++; }
+                if (sBatch.mode && batch.mode !== sBatch.mode) { batch.mode = sBatch.mode; updated = true; }
                 if (updated) await batch.save();
 
                 // Also keep Batch reference on assigned SHO user

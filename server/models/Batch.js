@@ -62,6 +62,11 @@ const batchSchema = new mongoose.Schema({
     endTime: String,
     subject: String
   }],
+  mode: {
+    type: String,
+    enum: ['Online', 'Offline'],
+    default: null
+  },
   isActive: {
     type: Boolean,
     default: true
