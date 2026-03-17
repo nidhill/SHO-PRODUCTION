@@ -6,6 +6,7 @@ import ResetPassword from './pages/ResetPassword';
 import ContactAdmin from './pages/ContactAdmin';
 import Dashboard from './pages/Dashboard';
 import Batches from './pages/Batches';
+import BatchDetail from './pages/BatchDetail';
 import Students from './pages/Students';
 import StudentDetail from './pages/StudentDetail';
 import Attendance from './pages/Attendance';
@@ -45,6 +46,11 @@ function App() {
               <Route path="/batches" element={
                 <ProtectedRoute>
                   <Batches />
+                </ProtectedRoute>
+              } />
+              <Route path="/batches/:id" element={
+                <ProtectedRoute>
+                  <BatchDetail />
                 </ProtectedRoute>
               } />
               <Route path="/students" element={

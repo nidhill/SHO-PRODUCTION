@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -65,6 +66,7 @@ const MANAGER_ROLES = ['ssho', 'academic', 'pl', 'ceo_haca', 'admin', 'leadershi
 
 export default function Batches() {
   const { hasRole, user: currentUser } = useAuth();
+  const navigate = useNavigate();
   const canManage = hasRole(MANAGER_ROLES);
   const canCreateMentor = hasRole(['ssho', 'academic', 'pl', 'leadership', 'admin', 'ceo_haca']);
 
@@ -403,7 +405,11 @@ export default function Batches() {
       {/* Batch Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 animate-slide-up" style={{ animationDelay: '0.2s' }}>
         {filteredBatches.map((batch) => (
-          <Card key={batch._id} className="border-border/60 hover:border-border transition-colors group">
+          <Card
+            key={batch._id}
+            className="border-border/60 hover:border-border transition-colors group cursor-pointer"
+            onClick={() => navigate(`/batches/${batch._id}`)}
+          >
             <CardContent className="p-4">
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
@@ -416,7 +422,7 @@ export default function Batches() {
                     <p className="text-[11px] text-muted-foreground">{batch.code}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                   <Badge
                     variant={batch.status === 'active' ? 'default' : batch.status === 'completed' ? 'secondary' : 'outline'}
                     className="text-[10px] font-medium"
