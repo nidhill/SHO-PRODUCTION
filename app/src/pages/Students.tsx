@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   Loader2, Search, ExternalLink, Users, UserCheck, AlertCircle,
-  Filter, GraduationCap, MoreHorizontal, ArrowRightLeft,
+  Filter, GraduationCap, MoreHorizontal, ArrowRightLeft, CheckSquare, Square, X,
 } from 'lucide-react';
 import { studentService, batchService } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -46,6 +46,31 @@ export default function Students() {
   const [isTransferring, setIsTransferring] = useState(false);
 
   const canTransfer = user && TRANSFER_ROLES.includes(user.role);
+
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+
+  const toggleSelect = (id: string) =>
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+
+  const toggleSelectAll = () =>
+    setSelectedIds(selectedIds.length === paginatedStudents.length ? [] : paginatedStudents.map(s => s._id));
+
+  const handleBulkStatusUpdate = async (newStatus: string) => {
+    if (!selectedIds.length) return;
+    setIsBulkUpdating(true);
+    try {
+      await Promise.all(selectedIds.map(id => studentService.updateStatus(id, newStatus)));
+      toast.success(`Updated ${selectedIds.length} students to "${newStatus.replace('_', ' ')}"`);
+      setSelectedIds([]);
+      fetchData();
+    } catch {
+      toast.error('Bulk update failed');
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  };
 
   useEffect(() => { fetchData(); }, []);
 
@@ -134,8 +159,18 @@ export default function Students() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="p-4 lg:p-8 max-w-[1200px] mx-auto">
+        <div className="mb-6">
+          <div className="h-7 w-32 bg-muted animate-pulse rounded-md mb-2" />
+          <div className="h-4 w-52 bg-muted/60 animate-pulse rounded-md" />
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          {[...Array(4)].map((_, i) => <div key={i} className="h-20 bg-muted animate-pulse rounded-xl" />)}
+        </div>
+        <div className="h-12 bg-muted/60 animate-pulse rounded-xl mb-4" />
+        <div className="space-y-2">
+          {[...Array(8)].map((_, i) => <div key={i} className="h-14 bg-muted animate-pulse rounded-lg" />)}
+        </div>
       </div>
     );
   }
@@ -221,12 +256,36 @@ export default function Students() {
         </CardContent>
       </Card>
 
+      {/* Bulk Action Bar */}
+      {selectedIds.length > 0 && (
+        <div className="flex items-center gap-3 px-4 py-2.5 mb-2 bg-primary/5 border border-primary/20 rounded-lg animate-slide-up">
+          <span className="text-sm font-medium text-primary">{selectedIds.length} selected</span>
+          <span className="text-muted-foreground text-xs">— Set status to:</span>
+          {(['active', 'placed', 'interview_required', 'revoked'] as const).map(s => (
+            <Button key={s} size="sm" variant="outline" className="h-7 text-xs capitalize" disabled={isBulkUpdating}
+              onClick={() => handleBulkStatusUpdate(s)}>
+              {isBulkUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : s.replace('_', ' ')}
+            </Button>
+          ))}
+          <Button size="sm" variant="ghost" className="h-7 ml-auto" onClick={() => setSelectedIds([])}>
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      )}
+
       {/* Table */}
       <Card className="border-border/60 animate-slide-up" style={{ animationDelay: '0.2s' }}>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
+                <TableHead className="w-10">
+                  <button onClick={toggleSelectAll} className="text-muted-foreground hover:text-foreground transition-colors">
+                    {selectedIds.length === paginatedStudents.length && paginatedStudents.length > 0
+                      ? <CheckSquare className="h-4 w-4 text-primary" />
+                      : <Square className="h-4 w-4" />}
+                  </button>
+                </TableHead>
                 <TableHead className="text-xs font-semibold uppercase tracking-wide">Student</TableHead>
                 <TableHead className="text-xs font-semibold uppercase tracking-wide">Batch</TableHead>
                 <TableHead className="text-xs font-semibold uppercase tracking-wide">Status</TableHead>
@@ -238,7 +297,14 @@ export default function Students() {
             </TableHeader>
             <TableBody>
               {paginatedStudents.map((student) => (
-                <TableRow key={student._id} className="group">
+                <TableRow key={student._id} className={`group ${selectedIds.includes(student._id) ? 'bg-primary/5' : ''}`}>
+                  <TableCell className="w-10">
+                    <button onClick={() => toggleSelect(student._id)} className="text-muted-foreground hover:text-foreground transition-colors">
+                      {selectedIds.includes(student._id)
+                        ? <CheckSquare className="h-4 w-4 text-primary" />
+                        : <Square className="h-4 w-4" />}
+                    </button>
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-xs font-semibold text-muted-foreground">

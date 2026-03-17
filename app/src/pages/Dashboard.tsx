@@ -274,9 +274,9 @@ export default function Dashboard() {
             className="gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 shadow-md shadow-violet-600/20"
           >
             {isSyncing ? (
-              <><Loader2 className="h-4 w-4 animate-spin" /> Syncing from Sales...</>
+              <><Loader2 className="h-4 w-4 animate-spin" /> Syncing...</>
             ) : (
-              <><RefreshCw className="h-4 w-4" /> Sync Sales Data</>
+              <><RefreshCw className="h-4 w-4" /> Sync from Sales CRM</>
             )}
           </Button>
         )}

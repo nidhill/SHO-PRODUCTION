@@ -1,17 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import {
     Shield, Moon, Sun, Loader2, Phone, Mail, Pencil,
-    Clock, GraduationCap, Bell, Activity,
+    Clock, GraduationCap, Activity,
     CheckCircle2, AlertCircle, Users, BookOpen,
 } from 'lucide-react';
 import { authService, batchService, studentService } from '@/services/api';
@@ -53,20 +51,6 @@ function Avatar({ name, size = 'lg' }: { name: string; size?: 'sm' | 'md' | 'lg'
     );
 }
 
-function NotifToggle({ label, desc, storageKey }: { label: string; desc: string; storageKey: string }) {
-    const [on, setOn] = useState(() => localStorage.getItem(storageKey) !== 'false');
-    const toggle = (v: boolean) => { setOn(v); localStorage.setItem(storageKey, String(v)); };
-    return (
-        <div className="flex items-center justify-between py-3">
-            <div>
-                <p className="text-sm font-medium">{label}</p>
-                <p className="text-xs text-muted-foreground">{desc}</p>
-            </div>
-            <Switch checked={on} onCheckedChange={toggle} />
-        </div>
-    );
-}
-
 // ─── Main Component ────────────────────────────────────
 export default function Settings() {
     const { user } = useAuth();
@@ -103,15 +87,6 @@ export default function Settings() {
         })();
     }, []);
 
-    // Profile completion %
-    const profileFields = [
-        { label: 'Name', done: !!user?.name },
-        { label: 'Email', done: !!user?.email },
-        { label: 'Phone', done: !!user?.phone },
-        { label: 'Role', done: !!user?.role },
-    ];
-    const completion = Math.round((profileFields.filter(f => f.done).length / profileFields.length) * 100);
-
     // Assigned batches for this user
     const myBatches = batches.filter(b => {
         const bid = b._id;
@@ -123,18 +98,7 @@ export default function Settings() {
         myBatches.some(b => String(b._id) === String(s.batch?._id))
     );
 
-    // Login history from localStorage
-    const loginHistory: { time: string; label: string }[] = (() => {
-        try { return JSON.parse(localStorage.getItem('loginHistory') || '[]'); } catch { return []; }
-    })();
-
-    // Save login time on mount
-    useEffect(() => {
-        const now = new Date().toISOString();
-        const prev = (() => { try { return JSON.parse(localStorage.getItem('loginHistory') || '[]'); } catch { return []; } })();
-        const updated = [{ time: now, label: 'Current session' }, ...prev.slice(0, 4)];
-        localStorage.setItem('loginHistory', JSON.stringify(updated));
-    }, []);
+    const sessionStart = new Date().toISOString();
 
     const handleSaveProfile = async () => {
         setIsSaving(true);
@@ -195,21 +159,24 @@ export default function Settings() {
                                 </div>
 
                                 {/* Profile Completion */}
-                                <div className="mt-4">
-                                    <div className="flex justify-between text-xs mb-1">
-                                        <span className="text-muted-foreground font-medium">Profile Completion</span>
-                                        <span className="font-semibold">{completion}%</span>
+                                {!user?.phone && (
+                                    <div className="mt-4 flex items-center gap-2 p-2.5 rounded-lg bg-amber-500/5 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-400">
+                                        <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                                        <span>Add your phone number to complete your profile.</span>
+                                        <button
+                                            className="ml-auto underline underline-offset-2 font-medium hover:text-amber-600 whitespace-nowrap"
+                                            onClick={() => { setEditName(user?.name || ''); setEditPhone(''); setEditMode(true); }}
+                                        >
+                                            Add now
+                                        </button>
                                     </div>
-                                    <Progress value={completion} className="h-1.5" />
-                                    <div className="flex gap-3 mt-2 flex-wrap">
-                                        {profileFields.map(f => (
-                                            <span key={f.label} className={`text-[11px] flex items-center gap-1 ${f.done ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
-                                                {f.done ? <CheckCircle2 className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
-                                                {f.label}
-                                            </span>
-                                        ))}
+                                )}
+                                {user?.phone && (
+                                    <div className="mt-4 flex items-center gap-2">
+                                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                                        <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Profile complete</span>
                                     </div>
-                                </div>
+                                )}
 
                                 {/* Edit form */}
                                 {editMode && (
@@ -372,48 +339,24 @@ export default function Settings() {
                     </CardContent>
                 </Card>
 
-                {/* ── Notifications ──────────────────────────────── */}
+                {/* ── Current Session ────────────────────────────── */}
                 <Card className="animate-slide-up border-border/60" style={{ animationDelay: '0.19s' }}>
                     <CardHeader className="pb-3">
                         <div className="flex items-center gap-2">
-                            <Bell className="h-5 w-5 text-pink-500" />
-                            <CardTitle className="text-base">Notification Preferences</CardTitle>
-                        </div>
-                        <CardDescription>Choose what notifications you want to receive.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="divide-y divide-border/50">
-                        <NotifToggle storageKey="notif_new_student" label="New Student Enrolled" desc="Get notified when a new student joins your batch" />
-                        <NotifToggle storageKey="notif_attendance" label="Attendance Reminders" desc="Daily reminder to mark attendance" />
-                        <NotifToggle storageKey="notif_assignment" label="Assignment Updates" desc="When new tasks or assignments are added" />
-                        <NotifToggle storageKey="notif_feedback" label="Feedback Alerts" desc="When feedback is submitted for your students" />
-                    </CardContent>
-                </Card>
-
-                {/* ── Login History ──────────────────────────────── */}
-                <Card className="animate-slide-up border-border/60" style={{ animationDelay: '0.22s' }}>
-                    <CardHeader className="pb-3">
-                        <div className="flex items-center gap-2">
                             <Clock className="h-5 w-5 text-orange-500" />
-                            <CardTitle className="text-base">Login History</CardTitle>
+                            <CardTitle className="text-base">Current Session</CardTitle>
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="space-y-3">
-                            {loginHistory.slice(0, 5).map((entry, i) => (
-                                <div key={i} className="flex items-center gap-3 py-2 border-b border-border/40 last:border-0">
-                                    <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${i === 0 ? 'bg-emerald-500' : 'bg-muted-foreground/30'}`} />
-                                    <div className="flex-1">
-                                        <p className="text-sm font-medium">{i === 0 ? 'Current session' : 'Previous login'}</p>
-                                        <p className="text-[11px] text-muted-foreground">
-                                            {new Date(entry.time).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
-                                        </p>
-                                    </div>
-                                    {i === 0 && <Badge variant="default" className="text-[10px]">Active</Badge>}
-                                </div>
-                            ))}
-                            {loginHistory.length === 0 && (
-                                <p className="text-sm text-muted-foreground text-center py-4">No login history recorded</p>
-                            )}
+                        <div className="flex items-center gap-3 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
+                            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 flex-shrink-0" />
+                            <div className="flex-1">
+                                <p className="text-sm font-medium">Active now</p>
+                                <p className="text-[11px] text-muted-foreground">
+                                    Session started {new Date(sessionStart).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                                </p>
+                            </div>
+                            <Badge variant="default" className="text-[10px]">Active</Badge>
                         </div>
                     </CardContent>
                 </Card>
