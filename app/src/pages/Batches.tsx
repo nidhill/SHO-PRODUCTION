@@ -58,6 +58,8 @@ import {
   UserMinus,
   ChevronRight,
   Calendar,
+  Wifi,
+  MapPin,
 } from 'lucide-react';
 import { batchService, userService } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -430,7 +432,21 @@ export default function Batches() {
                   </div>
                   <div className="min-w-0">
                     <h3 className="text-sm font-semibold truncate">{batch.name}</h3>
-                    <p className="text-[11px] text-muted-foreground">{batch.code}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <p className="text-[11px] text-muted-foreground">{batch.code}</p>
+                      {batch.mode && (
+                        <span className={`inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                          batch.mode === 'Online'
+                            ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                            : 'bg-slate-500/10 text-slate-600 dark:text-slate-400'
+                        }`}>
+                          {batch.mode === 'Online'
+                            ? <Wifi className="h-2.5 w-2.5" />
+                            : <MapPin className="h-2.5 w-2.5" />}
+                          {batch.mode}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>

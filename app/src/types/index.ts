@@ -30,6 +30,7 @@ export interface Batch {
   startDate: string;
   endDate?: string;
   status: 'active' | 'completed' | 'on_hold';
+  mode?: 'Online' | 'Offline';
   totalStudents: number;
   averageAttendance: number;
   averageFeedbackScore: number;
