@@ -184,9 +184,7 @@ export default function Users() {
     };
 
     return (
-
-
-
+        <>
         <div className="p-4 lg:p-8 max-w-[1200px] mx-auto">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
@@ -652,6 +650,6 @@ export default function Users() {
                 </form>
             </DialogContent>
         </Dialog>
-
+        </>
     );
 }
