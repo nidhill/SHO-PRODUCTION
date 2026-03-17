@@ -12,7 +12,7 @@ const ROUTE_TITLES: Record<string, string> = {
   '/school-management': 'Manage Schools',
   '/schools': 'Schools',
   '/attendance': 'Attendance',
-  '/assignments': 'Tasks',
+  '/assignments': 'Projects',
   '/feedback': 'Feedback',
   '/class-planner': 'Class Planner',
   '/users': 'Users',

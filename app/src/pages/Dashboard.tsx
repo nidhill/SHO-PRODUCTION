@@ -172,7 +172,7 @@ export default function Dashboard() {
 
   const quickActions = [
     { label: 'Mark Attendance', icon: CalendarCheck, path: '/attendance', roles: ['sho'] },
-    { label: 'Assignments', icon: ClipboardList, path: '/assignments', roles: [] },
+    { label: 'Projects', icon: ClipboardList, path: '/assignments', roles: [] },
     { label: 'Send Notice', icon: Bell, path: '/notifications', roles: ['sho', 'ssho', 'academic', 'leadership', 'admin', 'ceo_haca', 'pl'] },
     { label: 'Feedback', icon: MessageSquare, path: '/feedback', roles: [] },
     { label: 'Students', icon: GraduationCap, path: '/students', roles: [] },
@@ -513,7 +513,7 @@ export default function Dashboard() {
           <CardContent>
             <div className="space-y-4">
               {[
-                { label: 'Assignment Completion', value: stats?.assignmentCompletionRate || 0, color: 'text-blue-600 dark:text-blue-400' },
+                { label: 'Project Completion', value: stats?.assignmentCompletionRate || 0, color: 'text-blue-600 dark:text-blue-400' },
                 { label: 'Average Attendance', value: stats?.averageAttendance || 0, color: 'text-emerald-600 dark:text-emerald-400' },
                 { label: 'Feedback Score', value: (stats?.averageFeedbackScore || 0) * 20, color: 'text-amber-600 dark:text-amber-400' },
                 { label: 'Overall Performance', value: 0, color: 'text-violet-600 dark:text-violet-400' },

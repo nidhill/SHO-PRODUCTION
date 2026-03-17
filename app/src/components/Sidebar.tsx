@@ -46,7 +46,7 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }: SidebarProps)
 
   const managementNavItems = [
     { path: '/attendance', label: 'Attendance', icon: CalendarCheck, roles: ['sho', 'ssho', 'academic', 'pl', 'leadership', 'admin', 'ceo_haca'] },
-    { path: '/assignments', label: 'Tasks', icon: ClipboardList, roles: [] },
+    { path: '/assignments', label: 'Projects', icon: ClipboardList, roles: [] },
     { path: '/feedback', label: 'Feedback', icon: MessageSquare, roles: [] },
     { path: '/class-planner', label: 'Planner', icon: CalendarDays, roles: [] },
     { path: '/users', label: 'Users', icon: UserCog, roles: ['leadership', 'admin', 'ceo_haca'] },

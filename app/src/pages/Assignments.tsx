@@ -40,9 +40,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Assignments() {
-      const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const { hasRole } = useAuth();
+  const isMentor = hasRole(['mentor']);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [filteredAssignments, setFilteredAssignments] = useState<Assignment[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -76,7 +79,7 @@ export default function Assignments() {
       setFilteredAssignments(assignmentsResponse.data.assignments);
       setBatches(batchesResponse.data.batches);
     } catch (error) {
-      toast.error('Failed to load assignments');
+      toast.error('Failed to load projects');
     } finally {
       setIsLoading(false);
     }
@@ -102,7 +105,7 @@ export default function Assignments() {
   const handleCreateAssignment = async () => {
     try {
       await assignmentService.create(newAssignment);
-      toast.success('Assignment created successfully');
+      toast.success('Project created successfully');
       setIsCreateDialogOpen(false);
       setNewAssignment({
         title: '',
@@ -113,7 +116,7 @@ export default function Assignments() {
       });
       fetchData();
     } catch (error) {
-      toast.error('Failed to create assignment');
+      toast.error('Failed to create project');
     }
   };
 
@@ -149,23 +152,24 @@ export default function Assignments() {
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight">Assignments</h1>
+              <h1 className="text-2xl font-semibold tracking-tight">Projects</h1>
               <p className="text-muted-foreground mt-1">
-                Manage and track assignments
+                Track and manage student projects
               </p>
             </div>
+            {isMentor && (
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="mr-2 h-4 w-4" />
-                  Create Assignment
+                  Create Project
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-lg">
                 <DialogHeader>
-                  <DialogTitle>Create New Assignment</DialogTitle>
+                  <DialogTitle>Create New Project</DialogTitle>
                   <DialogDescription>
-                    Fill in the details to create a new assignment
+                    Fill in the details to create a new project for a batch
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 mt-4">
@@ -218,11 +222,12 @@ export default function Assignments() {
                     />
                   </div>
                   <Button onClick={handleCreateAssignment} className="w-full">
-                    Create Assignment
+                    Create Project
                   </Button>
                 </div>
               </DialogContent>
             </Dialog>
+            )}
           </div>
 
           {/* Filters */}
@@ -230,7 +235,7 @@ export default function Assignments() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search assignments..."
+                placeholder="Search projects..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -250,7 +255,7 @@ export default function Assignments() {
             </Select>
           </div>
 
-          {/* Assignments List */}
+          {/* Projects List */}
           <div className="space-y-4">
             {filteredAssignments.map((assignment) => {
               const stats = getSubmissionStats(assignment);
@@ -312,9 +317,9 @@ export default function Assignments() {
           {filteredAssignments.length === 0 && (
             <div className="text-center py-12">
               <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium">No assignments found</h3>
+              <h3 className="text-lg font-medium">No projects found</h3>
               <p className="text-muted-foreground">
-                Create your first assignment to get started
+                {isMentor ? 'Create your first project to get started' : 'No projects have been assigned yet'}
               </p>
             </div>
           )}
